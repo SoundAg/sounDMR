@@ -1,0 +1,6 @@
+*.*
+!*.R
+!*.Rmd
+!*.tar.gz
+!*.md
+!.gitignore
