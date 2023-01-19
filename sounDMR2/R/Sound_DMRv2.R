@@ -1006,18 +1006,17 @@ changepoint_analysis <- function(whole_df,
 #' @import stringr
 #' @export
 
-tidyMeg <-function(Megfile = ONT_bedfile, sample_ID = "E", call_type="DSP") {
+tidy <-function(Megfile = ONT_bedfile, sample_ID = "E", call_type="DSP") {
 
   # Extract columns of interest based on which process was run
-  if (call_type=='DSP'){
+  if (call_type=='DSP' | call_type=='Bonito'){
     Megfile_sub <- Megfile[,c(1,2,6,10,11,12)]
   }
-  else if(call_type=="Meg"){
+  else if(call_type=="Megalodon"){
     Megfile_sub <- Megfile[,c(1,2,6,10,11,13)]
   }
-  colnames(Megfile_sub) <- c("Chromosome","Position",paste("Strand", sample_ID, sep="_"),"Tot_reads", paste("PerMeth", sample_ID, sep="_") ,
-                             paste("CX", sample_ID, sep="_")) #Assign column names.
-  #calculate Meth and Unmeth reads from total reads. This is necessary for DMR analysis.
+  colnames(Megfile_sub) <- c("Chromosome","Position",paste("Strand", sample_ID, sep="_"),"Tot_reads", paste("PerMeth", sample_ID, sep="_") , paste("CX", sample_ID, sep="_")) #Assign column names.
+  #calculate Meth and Unmeth reads from total reads. This is necessary for downstream DMR analysis.
   Megfile_sub[[paste("Meth", sample_ID, sep="_")]] <- round( (Megfile_sub[[paste("PerMeth", sample_ID, sep="_")]] * Megfile_sub$Tot_reads)/100 )
   Megfile_sub[[paste("UnMeth", sample_ID, sep="_")]] <- (Megfile_sub$Tot_reads - Megfile_sub[[paste("Meth", sample_ID, sep="_")]])
   Megfile_sub <- Megfile_sub %>% select(-Tot_reads)
@@ -1040,7 +1039,7 @@ tidyMeg <-function(Megfile = ONT_bedfile, sample_ID = "E", call_type="DSP") {
 
 
 
-GenerateMegF <- function(Bedfiles=All_beds, N_prev_sample = 0, call_type="DSP",  project_info=""){
+GenerateMegF <- function(Bedfiles=All_beds, call_type="DSP", project_info=""){
 
 
   Alphabet_code <- c()
@@ -1050,42 +1049,39 @@ GenerateMegF <- function(Bedfiles=All_beds, N_prev_sample = 0, call_type="DSP", 
   }
 
   Alphabet_code <- unlist(Alphabet_code)
+  IDcat <- c( LETTERS[1:length(All_beds)] )
 
-  if( (N_prev_sample+length(All_beds)) <= length(LETTERS)){
-    IDcat <- c(LETTERS[(N_prev_sample+1):(N_prev_sample+length(All_beds)) ])
-    print(IDcat)
-  }
-  else {
-    index <- length(All_beds)-length(LETTERS)
-    IDcat <- c(LETTERS[(N_prev_sample+1):length(LETTERS)] , Alphabet_code[1:(N_prev_sample+index)] )
-    print(IDcat)
-  }
-
-
+  
   cat("Creating the Megaframe; sit tight!\n")
   mylist <- c()
   Exp_Id <- data.frame()
-  for (i in 1:length(Bedfiles)){ #replace it with the Remaining_beds if any of the individuals have 2 runs.
+  for (i in 1:length(Bedfiles)){ 
     for (j in 1:length(IDcat)){
       if(i==j){
         #import the bed file
-        data <- data.frame(purrr::map(Bedfiles[i], ~read.csv(.x, sep="\t", header=FALSE)))
+        Methyl_data <- data.frame(purrr::map(Bedfiles[i], ~read.csv(.x, sep="\t", header=FALSE)))
         #call tidy cats for each sample
-        tidy <- tidyMeg(Megfile = data, sample_ID = IDcat[j], call_type="DSP" )
-        #print(nrow(tidy))
+        clean_data <- tidy(Megfile = Methyl_data, sample_ID = IDcat[j], call_type="DSP" )
+        raw <- nrow(tidy)
         tidy <- unique(tidy)
-        #print(nrow(tidy))
+        clean <- nrow(tidy)
+        if (raw==clean){
+          cat("No duplicates in ",Bedfiles[i] ,", proceeding \n")
+        }
+          else {
+            cat("Duplicates found in ",Bedfiles[i] ,", cleaning data before proceeding \n")
+          }
         mylist[(length(mylist) + 1)] <- list(tidy) #append it to a list
         Bedfile_comb <- data.frame(IDcat[j],Bedfiles[i])
         Exp_Id <- rbind(Exp_Id,Bedfile_comb)
-        print(c(All_beds[i], IDcat[j]) )
+        #print(c(All_beds[i], IDcat[j]) )
       }
       else {
-        #print("Nope!")
+        
       }
     }
   }
-  write.table(Exp_Id, paste(project_info, "Model_Matrix_starter.csv",sep="_"), row.names=F, col.names = c("ID","Bedfile"), sep=",")
+  write.table(Exp_Id, paste(project_info, "Experimental_design_starter.csv",sep="_"), row.names=F, col.names = c("ID","Library"), sep=",")
 
   cat("The matrix file is now available in current directory!\n")
 
@@ -1098,16 +1094,40 @@ GenerateMegF <- function(Bedfiles=All_beds, N_prev_sample = 0, call_type="DSP", 
 
   Cxs <- bedfiles_Merged %>% select(starts_with("CX_")) %>% colnames()
   bedfiles_Merged$CX <- do.call(dplyr::coalesce, bedfiles_Merged[Cxs])
-
+  
   #Remove unwanted columns
   bedfiles_Merged <- bedfiles_Merged  %>% select(-(starts_with("Strand_")), -starts_with(("CX_")))
   #Rearrange
   Megaframe <- bedfiles_Merged[,c(1:2,(ncol(bedfiles_Merged)-1),(ncol(bedfiles_Merged)),3:(ncol(bedfiles_Merged)-2) )]
+  
+  #sanity check - to ensure no NAs in Strand and CX columns after coalesce
+  if ( (sum(is.na(Megaframe$Strand))==0 ) & 
+       sum(is.na(Megaframe$CX))==0 ) {
+    cat('QC : Megaframe looks good, Proceed to Zoomframe \n')
+  } else {
+    cat('QC: Strand and CX should not have Nas, re-run the megaframe function \n')
+  }
+  
   write.table(Megaframe, paste(project_info, "MegaFrame.csv",sep="_"), row.names=F, sep=",")
 
-  cat("Megaframe is now available in current directory!")
-
-  return (Megaframe)
+  cat("Megaframe is now available in current directory and in the Renv!")
+  
+  colnames(Exp_Id) = c("ID","Library")
+  
+  
+  #Check the number of rows/sample with missing data to exclude
+  rowSums(is.na(Megaframe))->Megaframe$NAs
+  #make a histogram
+  QCplot <- suppressMessages(ggplot(Megaframe, aes(x=NAs/3))+geom_histogram(bins=30) + 
+    labs(title = "Missing data per sample") + 
+    xlab("Sample") + 
+    ylab("Number of rows with missing data"))
+  
+  print(QCplot)
+  
+  Megaframe_list <- list(Megaframe,Exp_Id)
+  
+  return (Megaframe_list)
 }
 
 
@@ -1115,15 +1135,15 @@ GenerateMegF <- function(Bedfiles=All_beds, N_prev_sample = 0, call_type="DSP", 
 #'
 #' A function to add Zoom codes based on the gene positions.
 #' Currently the codes for this is as below
-#' 1- Anything that is only between gene start and gene stop
-#' 2- Anything that is between Adaptive start and Adaptive Stop
-#' 3- Anything that doesn't fall within in the above - to ensure we don't include these in the DMR analysis.
+#' 1- Region that is only between gene start and gene stop
+#' 2- Region that is between Adaptive start and Adaptive Stop excluding the gene body
+#' This helps subsetting easier for downstream analysis
 #'
 #' @param target ONT methyl bed files for each individual contained within the directory
-#' @param j This is required to assign proper Alphabet codes. If you need to include te samples from a previous round, then mention the total number of samples here. Default is 0. In this case Alphabetizing starts with 'A'.
+#' @param j This is required to assign proper Alphabet codes. If you need to include the samples from a previous round, then mention the total number of samples here. Default is 0. In this case Alphabetizing starts with 'A'.
 #' @param gcoord_exist This is to add a prefix to all the files that get exported while running the function.
-#' @param Gene_col Use this column to specifify wether to add Gene Names or Ids in the Zoom frame.
-#' @return Zoomframe Similar to Megaframe except this includes more information on targets, positions zero'ed to ATG for each target and a few other information with an additional column that included zoom codes
+#' @param Gene_col Use this column to specificity whether to add Gene Names or Ids in the Zoom frame.
+#' @return Zoomframe Similar to Megaframe except this includes more information on targets, positions Zero'd to ATG for each target and a few other information with an additional column that included zoom codes
 #' @import tidyverse
 #' @import stringr
 #' @export
@@ -1137,15 +1157,12 @@ Zoom <- function(target=CPL3, j=2, gcoord_exist=TRUE, Gene_col="Gene.Name") {
         if((target$Position[i]>=Geneco$Low[j]) & (target$Position[i]<=Geneco$High[j]) ) {
           #print("entering 1")
           target$Zoom_co[i] <- 1
-        } else if ((target$Position[i]>=Geneco$Adapt_Start[j]) & (target$Position[i]<=Geneco$Adapt_End[j])) {
-          #print("entering 2")
-          target$Zoom_co[i] <- 2
         } else {
           #print("entering 0")
-          target$Zoom_co[i] <- 0
+          target$Zoom_co[i] <- 2
         }
       }   else {
-        print ("Gene doesn't match")
+        print ("Chromosomes/Column names don't match, check your Gene Coordinates file")
       }
     }
   }
@@ -1173,57 +1190,49 @@ Zoom <- function(target=CPL3, j=2, gcoord_exist=TRUE, Gene_col="Gene.Name") {
 #' @import stringr
 #' @export
 
-getZoomF <- function(Geneco = Geneco, MFrame = Megaframe, Gene_col="Gene.Name", filter_NAs=0, gene_list = targets, project_info="") {
+getZoomF <- function(Geneco = Geneco, MFrame = MegaFrame, Gene_col="Gene.Name", filter_NAs=1, project_info="") {
 
   #set the filter based on how stringent it needs to be based on the plot
   MFrame[MFrame$NAs<(filter_NAs*3),]->MFrame
 
-  cat("Creating the ZoomFrame; sit tight!\n")
+  cat("Creating the ZoomFrame, sit tight!\n")
 
   #create an empty df()
-  IF3 <- data.frame()
+  Final_gene_set <- data.frame()
   for (i in 1:nrow(Geneco)){
     if( any(Geneco$Chromosome[i]==MFrame$Chromosome) ){ #make sure the chromosomes match between Mframe and geneco
-      if ( max(MFrame$Position)>=Geneco$Adapt_Start[i] && (min(MFrame$Position)<=Geneco$Adapt_End[i]) ) {
-        yo <- MFrame[MFrame$Chromosome %in% Geneco$Chromosome[i], ] #subset based on the gene
-        #subset further based on how much of the flanking region you want to see the methylation pattern.
-        TG <- yo %>% tidyverse::filter(Position>=(Geneco$Low[i]-Geneco$Flanking[i]) & Position<=(Geneco$High[i]+Geneco$Flanking[i]) )
-        TG$Gene <- Geneco[[Gene_col]][i] #Add-in the gene/geneID names
+      if ( max(MFrame$Position)>=Geneco$Adapt_Low[i] && (min(MFrame$Position)<=Geneco$Adapt_High[i]) ) {
+        Gene_subset <- MFrame[MFrame$Chromosome %in% Geneco$Chromosome[i], ] #subset based on the gene
+        Gene_subset$Gene <- Geneco[[Gene_col]][i] #Add-in the gene/geneID names
         if (Geneco$Strand[i]=="+") {
-          TG$Zeroth_pos <- (TG$Position - Geneco$Low[i]) #super important to compute the Zeroth position to center everything around ATG.
+          Gene_subset$Zeroth_pos <- (Gene_subset$Position - Geneco$Low[i]) #Computing the Zeroth position to center everything around ATG.
         }
         else if (Geneco$Strand[i] == "-") {
-          TG$Zeroth_pos <-  (Geneco$High[i]- TG$Position)
+          Gene_subset$Zeroth_pos <-  (Geneco$High[i]- Gene_subset$Position) #reorienting the anti-sense genes
         }
         #Call the Zoom function to add Zoom_co-ordinates
-        Final <- Zoom(TG,i, TRUE)
-        IF3 <- rbind(IF3,Final) #append it to a Final dataframe
-        print(i)
+        Target_df <- Zoom(Gene_subset,i, TRUE)
+        Final_gene_set <- rbind(Final_gene_set,Target_df) #append it to a Final dataframe
+        #print(i)
       }
     }
     else {
-      print(c(i,"Pchh, Genes don't match"))
+      print(c(i,"Genes don't match"))
     }
   }
-  IF3 <- IF3[c(1,(ncol(IF3)-2),2:4,5:(ncol(IF3)-3),ncol(IF3)-1,ncol(IF3))]
+  Final_gene_set <- Final_gene_set[,c(1,(ncol(Final_gene_set)-2),2:4,5:(ncol(Final_gene_set)-4),ncol(Final_gene_set)-1,ncol(Final_gene_set))]
 
   cat("Zoomframe generated, Adding in target info column and changing NAs; Almost done!\n")
-
-  Meth_Unmeth <- IF3 %>% select(starts_with("Meth"), starts_with("UnMeth")) %>% colnames()
+  
+  #Clean up Meth and Unmeth columns with NAs
+  Meth_Unmeth <- Final_gene_set %>% select(starts_with("Meth"), starts_with("UnMeth")) %>% colnames()
   cat("Columns to change NAs -> 0s\n" , Meth_Unmeth)
   #convert NAs to 0s. Here we are not changing the Percent methylation column
-  IF3[Meth_Unmeth][is.na(IF3[Meth_Unmeth])] <- 0
+  Final_gene_set[Meth_Unmeth][is.na(Final_gene_set[Meth_Unmeth])] <- 0
 
-  for (i in 1:nrow(IF3)){
-    if (IF3$Gene[i] %in% gene_list){
-      IF3$Target_info[i] <- "T"
-    }
-    else {
-      IF3$Target_info[i] <- "NT"
-    }
-  }
-  write.table(IF3, paste(project_info, "ZoomFrame.csv",sep="_"), row.names=F, sep=",")
+  
+  write.table(Final_gene_set, paste(project_info, "ZoomFrame.csv",sep="_"), row.names=F, sep=",")
   cat("\nZoomframe is available in your current directory!")
 
-  return(IF3)
+  return(Final_gene_set)
 }
