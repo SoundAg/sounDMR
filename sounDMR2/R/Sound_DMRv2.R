@@ -46,7 +46,7 @@ create_gene_percent_x <- function(LongPercent, x = 'Chromosome',
 }
 
 
-#' Clean Input Data
+#' Create DMR Object
 #'
 #' A function to clean the input data of methylation data. It filters the data
 #' frame to contain only the columns of interest passed in as an argument and
@@ -56,12 +56,11 @@ create_gene_percent_x <- function(LongPercent, x = 'Chromosome',
 #' @param Exp_ID data frame containing the experimental design
 #' @param colnames_of_interest *optional* list of strings of the columns to keep
 #' in the analysis
-#' @return ZoomFrame_filtered a data frame subset of `ZoomFrame` containing only
-#' the columns passed in to `colnames_of_interest`
+#' @return out is a list of dataframes. This is the dmr object.
 #' @import tidyverse
 #' @export
 
-clean_data <- function(ZoomFrame = dataframe,
+create_dmr_obj <- function(ZoomFrame = dataframe,
                        Exp_ID = dataframe,
                        colnames_of_interest = c('Chromosome', 'Gene', 'Position',
                                                'Strand', 'CX', 'Zeroth_pos',
@@ -71,15 +70,12 @@ clean_data <- function(ZoomFrame = dataframe,
   Inputpers <- dplyr::select(ZoomFrame, starts_with("Per"))
   Inputpers$MeanMeth <- rowMeans(Inputpers, na.rm=TRUE)
   ZoomFrame_filtered <- ZoomFrame[Inputpers$MeanMeth != 0,]
-  print('Step 1: complete')
 
   #QC Make sure the correct columns are present
   print('Step 2: checking for missing columns in experimental id')
   for (col in colnames_of_interest) {
-    if (!col %in% colnames(ZoomFrame_filtered)){
-      if (col != 'Individual' & col != 'Plant') {
-        print(paste(col, 'not found in the ZoomFrame_filtered'))
-      }
+    if (!col %in% colnames(ZoomFrame_filtered) & !col %in% c('Individual', 'Plant'){
+      print(paste(col, 'not found in the ZoomFrame_filtered'))
     }
   }
 
@@ -111,15 +107,13 @@ clean_data <- function(ZoomFrame = dataframe,
     print('Individual_Name column not found in the Experimental_ID, using Plant')
     Exp_ID$Individual_Name <- Exp_ID$Plant
   }
-  print('Step 2: complete')
 
   # Convert the experimental ID 'Plant' column to character
   Exp_ID$Plant <- as.character(Exp_ID$Plant)
 
-  #We want to order the input frame in such a way that it will be easy to recreate analysis
+  # We want to order the input frame in such a way that it will be easy to recreate analysis
   print('Step 3: reordering ZoomFrame_filtered')
   ZoomFrame_filtered <- ZoomFrame_filtered[order(ZoomFrame_filtered[,'Gene'], ZoomFrame_filtered[,'Zeroth_pos']), ]
-  print('Step 3: complete')
 
   # Create the Longer dataframes
   #------------------------------
@@ -138,7 +132,6 @@ clean_data <- function(ZoomFrame = dataframe,
                                colnames_of_interest = c('Chromosome', 'Gene', 'Position', 'Strand', 'CX',
                                                         'Zeroth_pos', 'Individual'))
 
-  print('Step 3: complete')
   #Replacing read depth of NA with 0
   LongUnMeth$RD[is.na(LongUnMeth$RD)] = 0
   LongMeth$RD[is.na(LongMeth$RD)] = 0
@@ -154,17 +147,15 @@ clean_data <- function(ZoomFrame = dataframe,
     print(paste('LongPercent contains', nrow(LongPercent), 'rows. Expected:',
                 (nrow(Zoom_Frame_filtered) * nrow(Exp_ID)), 'rows'))
   }
-  print('Step 4: complete')
 
-  print('Step 4: merging long files with Exp_ID to annotate')
+  print('Step 5: merging long files with Exp_ID to annotate')
   # Merge Long files with Exp_ID to annotate
-  print('Step 5: annotating long files with Experimental ID')
+  print('Step 6: annotating long files with Experimental ID')
   LongPercent <- dplyr::left_join(LongPercent, Exp_ID, by = c('Individual' = 'ID'))
   LongMeth <- dplyr::left_join(LongMeth, Exp_ID, by = c('Individual' = 'ID'))
-  print('Step 5: complete')
 
   # Aggregate
-  print('Step 6: aggregating by plant')
+  print('Step 7: aggregating by plant')
   LongPercent <- LongPercent %>%
     group_by(Gene, Zeroth_pos, Plant, Position, CX, Strand, Group, Chromosome) %>%
     summarize(Percent = mean(Percent, na.rm = T))
@@ -174,9 +165,6 @@ clean_data <- function(ZoomFrame = dataframe,
     summarize(total_RD = mean(total_RD, na.rm = T))
   LongMeth <- LongMeth[,c('Chromosome', 'Gene', 'Position', 'Strand', 'CX',
                           'Zeroth_pos', 'Plant', 'total_RD', 'Group')]
-  print('Step 6: complete')
-
-  print('Step 5: complete')
 
   # Save all the outputs
   out <- list()
@@ -292,28 +280,6 @@ create_cols_for_individuals <- function(Exp_ID_Treated,
 }
 
 
-#' Find the Difference Between Two Columns
-#'
-#' This function is intended to find the difference between treatment and
-#' control groups, but can be used to find the difference between any two columns
-#' in the given data
-#'
-#' @param data a data frame, usually the GenePercentGroup with treatment and
-#' control columns
-#' @param treatment a string of the name of the treatment column
-#' @param control a string of the name of the control column
-#' @return treat_v_control a **vector** containing the difference between
-#' treatment and control
-#' @export
-
-find_col_diff <- function(data,
-                          treatment = "treatment",
-                          control = "control") {
-  treat_v_control <- data[[treatment]] - data[[control]]
-  return(treat_v_control)
-}
-
-
 #' Create Output Frame
 #'
 #' This function creates the Output_Frame that the group and individual DMR
@@ -321,17 +287,21 @@ find_col_diff <- function(data,
 #' to make sure the output is in the correct format.
 #'
 #' @inheritParams create_cols_for_individuals
-#' @param data the `ZoomFrame_filtered` produced in the clean_data function
+#' @param dmr_obj the dmr object containing the experimental design and raw data
 #'
 #' @export
-create_output_frame <- function(Exp_ID_Treated, data, GenePercentPlant,
+create_output_frame <- function(dmr_obj, GenePercentPlant,
                                 GeneDepthPlant, GenePercentGroup,
                                 control = 'C') {
-  #Create the beginnings of the Output statistic data frame
+  # Create experimental_design_df_treated
+  experimental_design_df_treated <- dmr_obj$experimental_design_df[dmr_obj$experimental_design_df$Group != control,]
+
+  # Create the beginnings of the Output statistic data frame
   Output_Frame <- data[,colnames_of_interest[-length(colnames_of_interest)]]
 
-  # create 3 new cols for each individual
-  Output_Frame <- create_cols_for_individuals(Exp_ID_Treated, Output_Frame,
+  # Create 3 new cols for each individual
+  Output_Frame <- create_cols_for_individuals(experimental_design_df_treated,
+                                              Output_Frame,
                                               GenePercentPlant, GeneDepthPlant,
                                               GenePercentGroup, control)
 
@@ -347,8 +317,8 @@ create_output_frame <- function(Exp_ID_Treated, data, GenePercentPlant,
 
   #Add in any summary statistic columns, such as this one
   Output_Frame <- cbind(Output_Frame,GenePercentPlant[,3:ncol(GenePercentPlant)])
-  Output_Frame$Treat_V_Control <- find_col_diff(GenePercentGroup, 'T', 'C')
-  Output_Frame$Control <- GenePercentGroup$C
+  Output_Frame$Treat_V_Control <- GenePercentGroup[,'T'] - GenePercentGroup[[control]]
+  Output_Frame$Control <- GenePercentGroup[[control]]
 
   return(Output_Frame)
 }
@@ -724,18 +694,21 @@ individual_DMR <- function(Output_Frame, ZoomFrame_filtered, Exp_ID_Treated,
 #'
 #' @inheritParams individual_DMR
 #' @param analysis_type either "individual" or "group"
+#' @param dmr_obj the dmr_object containing the experimental design df and zoomFrame_filtered
 #' @return Output_Frame
 #' @export
 
-DMR <- function(Output_Frame, ZoomFrame_filtered, Exp_ID, fixed = c('Group'),
+DMR <- function(Output_Frame, dmr_obj, fixed = c('Group'),
                 random = c('Plant'), colnames_of_interest, reads_threshold = 3,
                 model, control = '', analysis_type) {
   if (tolower(analysis_type) == 'group') {
-    Output_Frame = group_DMR(Output_Frame, ZoomFrame_filtered, Exp_ID,
+    Output_Frame = group_DMR(Output_Frame, dmr_obj$ZoomFrame_filtered,
+                             dmr_obj$experimental_design_df,
                              fixed = fixed,random = random, colnames_of_interest,
                              reads_threshold = reads_threshold, model = model)
   } else if (tolower(analysis_type) == 'individual') {
-    Output_Frame = individual_DMR(Output_Frame, ZoomFrame_filtered, Exp_ID,
+    Output_Frame = individual_DMR(Output_Frame, dmr_obj$ZoomFrame_filtered,
+                                  dmr_obj$experimental_design_df,
                                   fixed = fixed, random = random,
                                   reads_threshold = reads_threshold,
                                   control = control, model = model)
@@ -1001,7 +974,7 @@ changepoint_analysis <- function(whole_df,
 #'
 #' @param Methylbed Data frame containing the ONT methylation calls in a bed file for each individual
 #' @param sample_ID A string that takes in Alphabet code to assign to every individual sample in the experiment
-#' @param Methyl_call_type A string that included information about the type of run. Currently this package works on Megalodon , DSP (DeepSignal Plant) and Bonito.                       
+#' @param Methyl_call_type A string that included information about the type of run. Currently this package works on Megalodon , DSP (DeepSignal Plant) and Bonito.
 #' @return Methylbed_sub Clean data frame methyl file for every individual with Meth, Unmeth and Per_Meth columns
 #' @import tidyverse
 #' @import stringr
@@ -1067,7 +1040,7 @@ GenerateMegF <- function(Bedfiles=All_beds, Sample_count = 0, Methyl_call_type="
   }
 
   cat("Creating the Megaframe \n")
-  
+
   mylist <- c()
   Exp_Id <- data.frame()
   for (i in 1:length(Bedfiles)){ #replace it with the Remaining_beds if any of the individuals have 2 runs.
