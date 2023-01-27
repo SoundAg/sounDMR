@@ -28,7 +28,7 @@ Exp_ID <- read.csv(file.choose(), head=TRUE)
 colnames_of_interest <- c('Chromosome', 'Gene', 'Position', 'Strand', 'CX', 
                           'Zeroth_pos', 'Plant')
 
-dmr_obj <- clean_data(ZoomFrame, Exp_ID, colnames_of_interest)
+dmr_obj <- create_dmr_obj(ZoomFrame, Exp_ID, colnames_of_interest)
 
 #-----------------------------------
 # Creating Methylation Summary Data
@@ -82,7 +82,7 @@ changepoint_cols = find_changepoint_col_options(Output_Frame)
 
 # Run the changepoint_analysis function
 Output_Frame <- changepoint_analysis(Output_Frame, CG_penalty = 9, CHG_penalty = 4, 
-                              CHH_penalty = 7, 'Z_Zeb_Concentration_small')
+                              CHH_penalty = 7, z_col = 'Z_Zeb_Concentration_small')
 
 #------------------------------------Write Data---------------------------------
 
