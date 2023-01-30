@@ -323,32 +323,6 @@ create_output_frame <- function(dmr_obj, GenePercentPlant,
   return(Output_Frame)
 }
 
- #' Filter Experimental ID
- #'
- #' This function is used to filter the experimental id based on a condition.
- #' Currently it is only useful for filtering categorical data, but in time
- #' will be used for all types of data.
- #'
- #' @param experimental_id a data frame containing the experimental design information
- #' @param col_name the name of the column by which to filter
- #' @param list_to_save a list of strings representing the values to save
- #' @return sub_ID the filtered experimental_id
- #' @examples
- #' # Generate data
- #' experimental_id <- data.frame(ID = c('A', 'B', 'C', 'D'),
- #'                               val = c(1, 2, 3, 4))
- #'
- #' # Filter the data
- #' create_sub_ID(experimental_id, 'ID', c('A', 'C'))
- #'
- #' @export
-
- create_sub_ID <- function(experimental_id, col_name = 'ID',
-                           list_to_save = c('A', 'B', 'C')) {
-  sub_ID <- experimental_id[experimental_id[[col_name]] %in% list_to_save,]
-  return(sub_ID)
-}
-
 
 #' Create Fixed Effects
 #'
