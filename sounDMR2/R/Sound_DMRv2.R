@@ -246,37 +246,37 @@ pivot_and_subset <- function(data,
 #' Depth columns
 #'
 #' @param Exp_ID_Treated a data frame containing the experimental design
-#' @param OF the Output_Frame
+#' @param Output_Frame the Output_Frame
 #' @param GenePercentPlant summary dataframe built from `create_gene_percent_x()`
 #' containing % methylation for each Plant
 #' @param GenePercentGroup summary dataframe built from `create_gene_percent_x()`
 #' containing % methylation for groups
 #' @param GeneDepthPlant summary dataframe containing read depth for individuals
 #' @param control a string representing the control variable in GenePercentGroup
-#' @return OF the updated Output_Frame with 3 new columns for each individual in
+#' @return Output_Frame the updated Output_Frame with 3 new columns for each individual in
 #' the `Exp_IF_Treated` parameter
 #' @export
 
 create_cols_for_individuals <- function(Exp_ID_Treated,
-                                        OF,
+                                        Output_Frame,
                                         GenePercentPlant,
                                         GeneDepthPlant,
                                         GenePercentGroup,
                                         control = 'C') {
   for(id in unique(Exp_ID_Treated$Plant)) {
-    OF$NewZ <- 0
+    Output_Frame$NewZ <- 0
     # Name this column using trickery
-    colnames(OF)[ncol(OF)] <- paste(id, "Z", sep="_")
+    colnames(Output_Frame)[ncol(Output_Frame)] <- paste(id, "Z", sep="_")
     # Create new column that is difference in percent methylation between individual "i" and the control average
-    OF[,ncol(OF) + 1] <- GenePercentPlant[,id] - GenePercentGroup[[control]]
+    Output_Frame[,ncol(Output_Frame) + 1] <- GenePercentPlant[,id] - GenePercentGroup[[control]]
     # Name this column
-    names(OF)[ncol(OF)] <- paste(id, "MethChange", sep="_")
+    names(Output_Frame)[ncol(Output_Frame)] <- paste(id, "MethChange", sep="_")
     # Create a column that is read depth for that individual
-    OF[,ncol(OF) + 1] <- GeneDepthPlant[,id]
+    Output_Frame[,ncol(Output_Frame) + 1] <- GeneDepthPlant[,id]
     # Name this column
-    names(OF)[ncol(OF)] <- paste(id, "RD", sep="_")
+    names(Output_Frame)[ncol(Output_Frame)] <- paste(id, "RD", sep="_")
   }
-  return(OF)
+  return(Output_Frame)
 }
 
 
@@ -306,7 +306,7 @@ create_output_frame <- function(dmr_obj, GenePercentPlant,
                                               GenePercentGroup, control)
 
   # QC
-  # Checking OF created the three new cols for each individual
+  # Checking Output_Frame created the three new cols for each individual
   if (ncol(Output_Frame) == (length(colnames_of_interest) - 1) + 3 * length(unique(Exp_ID_Treated$Plant))) {
     print('Number of columns in Output_Frame is correct')
   } else {
@@ -563,7 +563,7 @@ group_DMR <- function(Output_Frame, ZoomFrame_filtered, expermental_design_df, f
   print(formula)
 
   #  Get the number of columns in the Output_Frame dataframe
-  original_OF_col_number <- ncol(Output_Frame)
+  original_Output_Frame_col_number <- ncol(Output_Frame)
 
   # The modelling here is the most "delicate" part of the operation.  Options include:
   # (A) cbind(Meth, UnMeth) ~ (1|Plant) + Treatment
@@ -597,7 +597,7 @@ group_DMR <- function(Output_Frame, ZoomFrame_filtered, expermental_design_df, f
     }
   }
   #  Replace NA values in these columns with 0s
-  Output_Frame[,original_OF_col_number:ncol(Output_Frame)][is.na(Output_Frame[,original_OF_col_number:ncol(Output_Frame)])] = 0
+  Output_Frame[,original_Output_Frame_col_number:ncol(Output_Frame)][is.na(Output_Frame[,original_Output_Frame_col_number:ncol(Output_Frame)])] = 0
 
   return(Output_Frame)
 }
@@ -708,8 +708,8 @@ DMR <- function(Output_Frame, dmr_obj, fixed = c('Group'),
 #' are suggested to be used in the changepoint analysis.
 #' @export
 
-find_changepoint_col_options <- function(DMR_output, OF = Output_Frame) {
-  #added_cols <- colnames(DMR_output[c((ncol(OF) + 1):ncol(DMR_output))])
+find_changepoint_col_options <- function(DMR_output, Output_Frame = Output_Frame) {
+  #added_cols <- colnames(DMR_output[c((ncol(Output_Frame) + 1):ncol(DMR_output))])
   z_cols <- colnames(DMR_output)[grepl('Z_', colnames(DMR_output))]
 
   print(z_cols)
