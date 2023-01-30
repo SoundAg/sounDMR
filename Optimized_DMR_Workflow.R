@@ -52,7 +52,7 @@ if (sum(GenePercentPlant$Zeroth_pos == dmr_obj$ZoomFrame_filtered$Zeroth_pos) !=
 #-----------------------------------------------
 
 Output_Frame <- create_output_frame(dmr_obj, GenePercentPlant, GeneDepthPlant,
-                                    GenePercentGroup, 'C')
+                                    GenePercentGroup, control = 'C')
 
 
 #--------------------
