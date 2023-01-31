@@ -1164,7 +1164,7 @@ Zoom <- function(target=Gene_subset, j=1, gcoord_exist=TRUE, Gene_col="Gene_name
 #' @import stringr
 #' @export
 
-getZoomF <- function(gene_cord_df = gene_cord_df, MFrame = Megaframe, Gene_col="Gene_name", filter_NAs=0, target_info=TRUE, gene_list = Geneco$Gene_name, File_prefix="") {
+generate_zoomframe <- function(gene_cord_df = gene_cord_df, MFrame = Megaframe, Gene_col="Gene_name", filter_NAs=0, target_info=TRUE, gene_list = Geneco$Gene_name, File_prefix="") {
 
   #set the filter based on how stringent it needs to be based on the plot
   MFrame[MFrame$NAs<(filter_NAs*3),]->MFrame
