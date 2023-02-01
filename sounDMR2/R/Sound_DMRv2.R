@@ -941,16 +941,46 @@ changepoint_analysis <- function(whole_df,
   close(pb)
   return(everything)
 }
+#' sound_score
+#' @description
+#' Takes in an Output_Frame that has been broken in to changepoint regions based on a specific test statistic of interest, and creates an aggregated changepoint region file that includes summary statistics for each region, and the "sound score" a measure of the strength of a DMR within that region.
+#'
+#' @param changepoint_OF (df) - The OF file that has had changepoint calling ran on it
+#' @param Statistic (str) - Name of the test statistic that changepoint was run on
+#' @param Per_Change (str) - Column that captures the change in methylation between two groups of interest
+#' @param other_columns (str) - Names of any other columns that one is interested in calculating region averages on.
+#' @return Aggregated_Changepoint_File (df) - File that contains information about methylation patterns within each changepoint region
+#' @export
+
+sound_score <- function(changepoint_OF = dataframe, Statistic="Z_GroupT_small", Per_Change = "Treat_V_Control", other_columns=c("Control", "Estimate_GroupT_small")) {
+  # Determine proper column names givwen the test statistic of interest
+  paste("MethGroup_",Statistic, sep = "")->MethGroup
+  paste("MethRegion_",Statistic, sep = "")->MethRegion_Z
+  paste("MethRegionLength_",Statistic, sep = "")->MethRegion_Length
+  # Create vector of columns that include information that the user wants aggregated across each changepoint region.  Includes Statistic, Per_Change, region length, and any other columns of interest.
+  c(MethRegion_Z, MethRegion_Length,Per_Change, other_columns )->keep_cols
+  # Create new dataframe that includes a new column that has a column for every unique changepoint region
+  within(changepoint_OF, cp_group <- paste(Gene,CX,changepoint_OF[[MethGroup]], sep='_'))-> cp_OF
+  #Calculate statistics and aggregate for every region
+  cp_OF %>%
+    group_by(cp_group) %>%
+    mutate(Count = n()) %>%
+    group_by(cp_group, Count) %>%
+    summarise_at(vars(one_of(keep_cols)), mean)->Ag_Groups
+  #Calculate Sound Statistic
+Ag_Groups$SCX<-(((Ag_Groups$Count)^(1/3))*(abs(Ag_Groups[[MethRegion_Z]])*abs(Ag_Groups[[Per_Change]]))^(1/2))
+return(Ag_Groups)
+}
 
 #' get_standard_methyl_bed
 #' @descrption
 #' A function to create a data frame for every individual in the experimental design without having to re run for every individual separately.
 #' This function takes in the methyl_bed file, subsets and then creates Methylated and unmethylated counts for each position to be used in the next steps.
 #'
-#' @param Methyl_bed Data frame containing the ONT methylation calls in a bed file for each individual
-#' @param Sample_ID A string that takes in alphabet code to assign to every individual sample in the experiment
-#' @param Methyl_call_type A string that includes information about the type of run. Currently this package works on Megalodon , DSP (DeepSignal Plant) and Bonito.                       
-#' @return Methyl_bed_sub Standard data frame methyl file for every individual with Meth, Unmeth and Per_Meth columns
+#' @param Methyl_bed (df) Data frame containing the ONT methylation calls in a bed file for each individual separately
+#' @param Sample_ID (str) A string that is used inplace of sample name to keep it uniform. We are using an enumerator to generate this based on the number of samples/individuals in the experiment.
+#' @param Methyl_call_type (str) A string that includes information about the type of run. Currently this package works on Megalodon , DSP (DeepSignal Plant) and Bonito.                       
+#' @return Methyl_bed_sub (df) Standard data frame methyl file for every individual with Meth, Unmeth and Per_Meth columns
 #' @import tidyverse
 #' @import stringr
 #' @examples
@@ -984,12 +1014,12 @@ get_standard_methyl_bed <-function(Methyl_bed="Methyl.bed", Sample_ID = "S1", Me
 #' A function to create a single-combined data frame from individual methyl beds in the experiment
 #' This function only works with bedfiles output from only either of the three methylation call algorithms - DeepSignal Plant(DSP), Megalodon and Bonito.  
 #'
-#' @param methyl_bed_list ONT methyl bed filenames for each individual contained within the directory. This will just be a list of bedfile names.
+#' @param methyl_bed_list (list) ONT methyl bed filenames for each individual contained within the directory. This will just be a list of bedfile names.
 #' Hint : The input will be the "All_beds" vector that you create in the previous step.
-#' @param Sample_count This is required to assign proper alphabet codes. If you need to include the samples from a previous round, then enter the total number of samples from the previous round here. Default is 0. By default alphabetizing starts with 'A'.
-#' @param Methyl_call_type A string that includes information about the type of run. Currently this package works on Megalodon , DSP (DeepSignal Plant) and Bonito.
-#' @param File_prefix This is to add a prefix to all the files that get exported and saved to the working directory while running the function.
-#' @return Megaframe Clean data frame containing combined methyl bed information for every individual in the experiment
+#' @param Sample_count (int) This is required to assign proper alphabet codes. If you need to include the samples from a previous round, then enter the total number of samples from the previous round here. Default is 0. By default alphabetizing starts with 'A'.
+#' @param Methyl_call_type (str) A string that includes information about the type of run. Currently this package works on Megalodon , DSP (DeepSignal Plant) and Bonito.
+#' @param File_prefix (Flexible str) This is to add a prefix to all the files that get exported and saved to the working directory while running the function.
+#' @return Megaframe(df) Clean data frame containing combined methyl bed information for every individual in the experiment.
 #' @import tidyverse
 #' @import stringr
 #' @export
@@ -1102,7 +1132,7 @@ generate_megaframe <- function(methyl_bed_list=All_beds, Sample_count = 0, Methy
 
 
 
-#' Zoom - Adding in codes based on gene co-ordinates
+#' add_zoom_coords
 #'
 #' A function to add Zoom codes based on the gene positions.
 #' Currently the codes for this is as below
@@ -1110,25 +1140,25 @@ generate_megaframe <- function(methyl_bed_list=All_beds, Sample_count = 0, Methy
 #' 2- Anything that is between Adaptive start and Adaptive Stop
 #' 0- Anything that doesn't fall within in the above - to ensure we don't include these in the DMR analysis.
 #'
-#' @param target Subset of ONT-methyl bed to positions pertaining to a single gene at a time
-#' @param j This is required to assign proper Alphabet codes. 
-#' @param gcoord_exist This is to use the function only the gene_cord_df file has the location of the gene.
-#' @param Gene_col Use this column to specifify wether to add Gene Names or Ids in the Zoom frame.
-#' @return Zoomframe similar to Megaframe except this includes more information on targets, positions zero'ed to ATG for each target and a few other information with an additional column that included zoom codes
+#' @param target (df) Subset of ONT-methyl bed to positions pertaining to a single gene at a time
+#' @param geneco_index (int) This is index that refers to the row number of the geneco df, required to assign proper Alphabet codes. 
+#' @param gcoord_exist (Boolean) This is to use the function only the gene_cord_df file has the location of the gene.
+#' @param Gene_col (str) Use this column to specifify wether to add Gene Names or Ids in the Zoomframe.
+#' @return Zoomframe (df) Similar to Megaframe except this includes more information on targets, positions zero'ed to ATG for each target and a few other information with an additional column that included zoom codes
 #' @import tidyverse
 #' @import stringr
 #' @export
 
-Zoom <- function(target=Gene_subset, j=1, gcoord_exist=TRUE, Gene_col="Gene_name") {
+add_zoom_coords <- function(target=Gene_subset, geneco_index=i, gcoord_exist=TRUE, Gene_col="Gene_name") {
 
 
   if(gcoord_exist==TRUE){
     for (i in 1:nrow(target)) {
-      if (gene_cord_df[[Gene_col]][j]==target$Gene[i]){
-        if((target$Position[i]>=gene_cord_df$Low[j]) & (target$Position[i]<=gene_cord_df$High[j]) ) {
+      if (gene_cord_df[[Gene_col]][geneco_index]==target$Gene[i]){
+        if((target$Position[i]>=gene_cord_df$Low[geneco_index]) & (target$Position[i]<=gene_cord_df$High[geneco_index]) ) {
           target$Zoom_co[i] <- 1 #Gene body region
 
-        } else if ((target$Position[i]>=gene_cord_df$Adapt_Low[j]) & (target$Position[i]<=gene_cord_df$Adapt_High[j])) {
+        } else if ((target$Position[i]>=gene_cord_df$Adapt_Low[geneco_index]) & (target$Position[i]<=gene_cord_df$Adapt_High[geneco_index])) {
             target$Zoom_co[i] <- 2 #Adaptive sequence region
 
         } else {
@@ -1152,14 +1182,14 @@ Zoom <- function(target=Gene_subset, j=1, gcoord_exist=TRUE, Gene_col="Gene_name
 #'
 #' A function to create a single-merged data frame from individual methyl beds in the experiment
 #'
-#' @param gene_cord_df File containing gene-coordinate info
-#' @param MFrame Megaframe data from the previous function
-#' @param File_prefix This is to add a prefix to all the files that get exported while running the function.
-#' @param filter_NAs Select this parameter based on the histogram. This will filter out NAs based on per sample
-#' @param target_info This takes in TRUE or FALSE. Enter TRUE only if the megaframe contains target genes that need to be differentiated from non-targets. 
-#' @param gene_list Provide a list of target genes to distiguish from non-target genes within the Zoom frame. By deafult it will take in the All the genes from the gene coordinates file.
-#' @inheritParams Zoom
-#' @return Zoomframe similar to Megaframe except this includes more information on targets, positions zero'ed to ATG for each target and a few other information.
+#' @param gene_cord_df (df) Data frame containing gene-coordinate info
+#' @param MFrame (df) Megaframe data from the previous function
+#' @param File_prefix (Flexible str) This is to add a prefix to all the files that get exported while running the function.
+#' @param filter_NAs (int) Select this parameter based on the histogram plot. This will filter out NAs based on per sample
+#' @param target_info (Boolean) This takes in TRUE or FALSE. Enter TRUE only if the megaframe contains target genes that need to be differentiated from non-targets. 
+#' @param gene_list (list) Provide a list of target genes to distiguish from non-target genes within the Zoomframe. By deafult it will take in the All the genes from the gene coordinates file.
+#' @inheritParams add_zoom_coords
+#' @return Zoomframe (df) Similar to Megaframe except this includes more information on targets, positions zero'ed to ATG for each target and a few other information.
 #' @import tidyverse
 #' @import stringr
 #' @export
@@ -1184,8 +1214,8 @@ generate_zoomframe <- function(gene_cord_df = gene_cord_df, MFrame = Megaframe, 
         else if (gene_cord_df$Strand[i] == "-") {
           Gene_subset$Zeroth_pos <-  (gene_cord_df$High[i]- Gene_subset$Position) #reorienting the anti-sense genes
         }
-        #Call the Zoom function to add Zoom_co-ordinates
-        Target_df <- Zoom(Gene_subset,i, TRUE)
+        #Call the add_zoom_coords function to add Zoom_co-ordinates
+        Target_df <- add_zoom_coords(Gene_subset,i, TRUE)
         Final_gene_set <- rbind(Final_gene_set,Target_df) #append it to a Final dataframe
       }
     }
@@ -1220,3 +1250,4 @@ generate_zoomframe <- function(gene_cord_df = gene_cord_df, MFrame = Megaframe, 
 
   return(Final_gene_set)
 }
+
