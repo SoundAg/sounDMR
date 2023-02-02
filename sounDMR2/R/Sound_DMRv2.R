@@ -3,11 +3,11 @@
 #' A function to create different subsets of the LongPercent df depending on the
 #' column of interest
 #'
-#' @param LongPercent data frame containing the methylation data as percents in
+#' @param LongPercent (df) - containing the methylation data as percents in
 #' long format using `dcast()`
-#' @param x A string representing the column to compare to Gene * Zeroth_pos
-#' @param function_name an aggregation function such as mean, sd, or var
-#' @return dcast_output a subset of the LongPercent dataframe
+#' @param x (str) the column to compare to Gene * Zeroth_pos
+#' @param function_name (function) an aggregation function such as mean, sd, or var
+#' @return dcast_output (df) - a subset of the LongPercent dataframe
 #' @examples
 #' # Generate sample data
 #' LongPercent <- data.frame(
@@ -52,11 +52,11 @@ create_gene_percent_x <- function(LongPercent, x = 'Chromosome',
 #' frame to contain only the columns of interest passed in as an argument and
 #' removes rows where the mean methylation is 0.
 #'
-#' @param ZoomFrame data frame containing the input methylation data
-#' @param expermental_design_df data frame containing the experimental design
-#' @param colnames_of_interest *optional* list of strings of the columns to keep
+#' @param ZoomFrame (df) containing the input methylation data
+#' @param expermental_design_df (df) containing the experimental design
+#' @param colnames_of_interest *optional* (list of strings) - the columns to keep
 #' in the analysis
-#' @return out is a list of dataframes. This is the dmr object.
+#' @return out (list) - is a list of dataframes. This is the dmr object.
 #' @import tidyverse
 #' @export
 
@@ -183,9 +183,9 @@ create_dmr_obj <- function(ZoomFrame = dataframe,
 #'
 #' Keep only the necessary columns from a given data frame
 #'
-#' @param df the data frame to subset
+#' @param df (df) data frame to subset
 #' @inheritParams clean_data
-#' @return subsetted_df data frame with only the columns of interest
+#' @return subsetted_df (df) - data frame with only the columns of interest
 #' @examples
 #' # Generate data to subset
 #' df <- data.frame(
@@ -214,11 +214,11 @@ subset_cols <- function(df,
 #' allow for summary analysis. This function utilizes `tidyr::pivot_longer()`
 #' and `subset_cols()` from this package.
 #'
-#' @param data the `ZoomFrame_filtered`
-#' @param starts_with_cols the string pattern that the columns start with
+#' @param data (df) - the `ZoomFrame_filtered`
+#' @param starts_with_cols (str) - the string pattern that the columns start with
 #' @inheritParams tidyr::pivot_longer
 #' @inheritParams clean_data
-#' @return pivoted_and_subsetted_df is the cleaned data frame that has been
+#' @return pivoted_and_subsetted_df (df) - the cleaned data frame that has been
 #' pivoted to be longer and subsetted to only include the important columns.
 #' @import tidyr
 #' @export
@@ -245,15 +245,15 @@ pivot_and_subset <- function(data,
 #' Set up the output frame to include individual methylation change and Read
 #' Depth columns
 #'
-#' @param Exp_ID_Treated a data frame containing the experimental design
-#' @param Output_Frame the Output_Frame
-#' @param GenePercentPlant summary dataframe built from `create_gene_percent_x()`
+#' @param Exp_ID_Treated (df) - containing the experimental design
+#' @param Output_Frame (df) - the Output_Frame
+#' @param GenePercentPlant (df) - summary dataframe built from `create_gene_percent_x()`
 #' containing % methylation for each Plant
-#' @param GenePercentGroup summary dataframe built from `create_gene_percent_x()`
+#' @param GenePercentGroup (df) - summary dataframe built from `create_gene_percent_x()`
 #' containing % methylation for groups
-#' @param GeneDepthPlant summary dataframe containing read depth for individuals
-#' @param control a string representing the control variable in GenePercentGroup
-#' @return Output_Frame the updated Output_Frame with 3 new columns for each individual in
+#' @param GeneDepthPlant (df) - summary dataframe containing read depth for individuals
+#' @param control (str) - the control variable in GenePercentGroup
+#' @return Output_Frame (df) - the updated Output_Frame with 3 new columns for each individual in
 #' the `Exp_IF_Treated` parameter
 #' @export
 
@@ -280,9 +280,9 @@ create_cols_for_individuals <- function(Exp_ID_Treated,
 }
 
 
-#' Create Output Frame
+#' Create Methyl Summary
 #'
-#' This function creates the Output_Frame that the group and individual DMR
+#' This function creates the methyl_summary that the group and individual DMR
 #' functions rely on for their analysis. It includes some quality control checks
 #' to make sure the output is in the correct format.
 #'
@@ -290,7 +290,7 @@ create_cols_for_individuals <- function(Exp_ID_Treated,
 #' @param dmr_obj the dmr object containing the experimental design and raw data
 #'
 #' @export
-create_output_frame <- function(dmr_obj, GenePercentPlant,
+create_methyl_summary <- function(dmr_obj, GenePercentPlant,
                                 GeneDepthPlant, GenePercentGroup,
                                 control = 'C') {
   # Create experimental_design_df_treated
@@ -329,15 +329,17 @@ create_output_frame <- function(dmr_obj, GenePercentPlant,
 #' A function to create the string combining fixed effects that will be passed
 #' into `create_function()`
 #'
-#' @param fixed a list of strings containing the fixed effects elements
-#' @return fixed_effects a string containing the fixed effects properly formatted
+#' @param fixed (list of strings) - the fixed effects elements
+#' @return fixed_effects (str) - the fixed effects properly formatted
 #' to be passed into `create_function()`
 #' @examples
 #' # create multiple independent fixed effects
-#' create_fixed_effects(c('Group', 'Individual'))
+#' > create_fixed_effects(c('Group', 'Individual'))
+#' [1] "Group + Individual"
 #'
 #' # Create fixed effects with interactions
-#' create_fixed_effects(c('Group * Individual'))
+#' > create_fixed_effects(c('Group * Individual'))
+#' [1] "Group * Individual"
 #' @export
 
 create_fixed_effects <- function(fixed = c('effect1', 'effect2')) {
@@ -359,14 +361,16 @@ create_fixed_effects <- function(fixed = c('effect1', 'effect2')) {
 #' Create a string combining the list of random effects to be passed into the
 #' `create_formula()` function
 #'
-#' @param random a list of strings containing the random effects elements
-#' @return random_effects a string of the random effects properly formatted
+#' @param random (list of strings) - the random effects elements
+#' @return random_effects (str) - the random effects properly formatted
 #' @examples
 #' # Create independent random effects
-#' create_random_effects(c("Group", "Individual"))
+#' > create_random_effects(c("Group", "Individual"))
+#' [1] "(1 | Group) + (1 | Individual)"
 #'
 #' # Create random effects with an interaction
-#' create_random_effects(c("Group * Individual"))
+#' > create_random_effects(c("Group * Individual"))
+#' [1] "(1 | Group * Individual)
 #'
 #' @export
 
@@ -389,18 +393,20 @@ create_random_effects <- function(random = c('Group', 'ID')) {
 #' Combine the fixed and random effects into the formula to be used
 #' in the model
 #'
-#' @param fixed a string containing the fixed effects variables. Note: this
+#' @param fixed (str) - the fixed effects variables. Note: this
 #' value **cannot** be 'ID'. ID is used to merge data together downstream for
 #' running the model so including the value in the effects will break the model.
-#' @param random a string containing the random effects variables. Note: this
+#' @param random (str) - the random effects variables. Note: this
 #' value **cannot** be 'ID'. ID is used to merge data together downstream for
 #' running the model so including the value in the effects will break the model.
-#' @return effects_formula a formula of the mixed effects
+#' @return effects_formula (formula) - a formula of the mixed effects
 #' @examples
 #' # Create formula of independent and random effects
-#' create_formula(fixed = c('Group'), random = c('Individual'))
+#' > create_formula(fixed = c('Group'), random = c('Individual'))
+#' [1] "cbind(Meth, UnMeth) ~ Group + (1 | Individual)"
 #'
-#' create_formula(fixed = c('Group', 'Individual'), random = c('Plant' * 'Gene'))
+#' > create_formula(fixed = c('Group', 'Individual'), random = c('Plant * Gene'))
+#' [1] "cbind(Meth, UnMeth) ~ Group + Individual + (1 | Plant * Gene)"
 #' @import stats
 #' @export
 
@@ -426,13 +432,12 @@ create_formula <- function(fixed, random) {
 #' Update the `Output_Frame` dataframe for a given row with the summary statistics
 #' provided by the model
 #'
-#' @param i an integer for the row number of the dataframe
-#' @param Output_Frame the data frame containing all the information
-#' @param model_summary the data frame containing the summary statistics from
-#' the model
-#' @param ind_name (optional) containing the name of the z score column for
+#' @param i (int) - the row number of the dataframe
+#' @param Output_Frame (df) - all the information
+#' @param model_summary (df) - the summary statistics from the model
+#' @param ind_name (str) - *optional* containing the name of the z score column for
 #' individual DMR analysis
-#' @return Output_Frame the data frame with the proper row updated to include
+#' @return Output_Frame (df) - the data frame with the proper row updated to include
 #' the summary statistics
 #' @export
 
@@ -460,14 +465,13 @@ save_model_summary <- function(i, Output_Frame, model_summary, ind_name = '') {
 #' This function runs the glmer function using a binomial model for a given
 #' optimizer function
 #'
-#' @param LM containing the information to put in the model, usually this is
+#' @param LM (df) - the information to put in the model, usually this is
 #' in a "long" format
-#' @param i an integer representing the row number
-#' @param Output_Frame the data frame containing all the summary information
-#' @param formula the formula to use in the model
-#' @param optimizer_func a string representing the optimizer function to use in
-#' the model
-#' @return Output_Frame the data frame containing updated summary information
+#' @param i (int) - the row number
+#' @param Output_Frame (df) - all the summary information
+#' @param formula (formula) - the formula to use in the model
+#' @param optimizer_func (str) - the optimizer function to use in the model
+#' @return Output_Frame (df) - the data frame containing updated summary information
 #' @import lme4
 #' @export
 #'
@@ -490,12 +494,12 @@ run_binomial <- function(LM, i = int, Output_Frame, formula,
 #'
 #' Function to run the correct model
 #'
-#' @param data containing the information to put in the model, usually this is
+#' @param data (df) - the information to put in the model, usually this is
 #' in "long" format
 #' @inheritParams run_binomial
-#' @param individual_name_z (optional) the name of the z column when running
+#' @param individual_name_z (str) - *optional* the name of the z column when running
 #' individual DMR analysis
-#' @return Output_Frame updated with the summary data from the model
+#' @return Output_Frame (df) - updated with the summary data from the model
 #' @export
 #'
 
@@ -539,19 +543,19 @@ run_model <- function(data, i, Output_Frame, formula, model_type,
 #'
 #' To run a binomial model to compare the methylation between groups
 #'
-#' @param Output_Frame data frame containing the read depth and methylation
+#' @param Output_Frame (df) - the read depth and methylation
 #' change information
-#' @param ZoomFrame_filtered data frame containing the percent methylation information
-#' @param expermental_design_df data frame of the experimental design
+#' @param ZoomFrame_filtered (df) - the percent methylation information
+#' @param expermental_design_df (df) - the experimental design
 #' @inheritParams create_formula
-#' @param reads_threshold integer representing the number of reads that are each
+#' @param reads_threshold (int) - the number of reads that are each
 #' methylated and unmethylated. This is important since data containing only one
 #' methylated read is unlikely to provide statistical power to our analysis. A
 #' value of 3 here means that the read depth is *at least* the depth provided by
 #' the threshold. Both the methylated and unmethylated samples need a read depth
 #' greater than or equal to this threshold in order to be considered for the model.
 #' @inheritParams subset_cols
-#' @return Output_Frame data frame containing the summary statistics from the model
+#' @return Output_Frame (df) - Output_Frame with the summary statistics from the model
 #' @export
 
 group_DMR <- function(Output_Frame, ZoomFrame_filtered, expermental_design_df, fixed = c('Group'),
@@ -609,8 +613,8 @@ group_DMR <- function(Output_Frame, ZoomFrame_filtered, expermental_design_df, f
 #' Purpose: to run individual DMR analysis
 #'
 #' @inheritParams group_DMR
-#' @param control a string to represent the control variable
-#' @return Output_Frame a data frame with additional columns
+#' @param control (str) - the control variable
+#' @return Output_Frame (df) - a data frame with additional columns
 #' @export
 
 individual_DMR <- function(Output_Frame, ZoomFrame_filtered, Exp_ID_Treated,
@@ -667,9 +671,9 @@ individual_DMR <- function(Output_Frame, ZoomFrame_filtered, Exp_ID_Treated,
 #' groups or for an individual compared to a group.
 #'
 #' @inheritParams individual_DMR
-#' @param analysis_type either "individual" or "group"
-#' @param dmr_obj the dmr_object containing the experimental design df and zoomFrame_filtered
-#' @return Output_Frame
+#' @param analysis_type (str) - either "individual" or "group"
+#' @param dmr_obj (list) - the dmr_object containing the experimental design df and zoomFrame_filtered
+#' @return Output_Frame (df)
 #' @export
 
 DMR <- function(Output_Frame, dmr_obj, fixed = c('Group'),
@@ -703,9 +707,9 @@ DMR <- function(Output_Frame, dmr_obj, fixed = c('Group'),
 #' analysis function, the output of this function are the columns deemed to
 #' provide the greatest use to the analysis.
 #'
-#' @param DMR_output the DMR Analysis output dataframe
-#' @return z_cols a list of strings representing the potential column names that
-#' are suggested to be used in the changepoint analysis.
+#' @param DMR_output (df) - the DMR Analysis output
+#' @return z_cols (list of strings) - a list of strings representing the potential
+#' column names that are suggested to be used in the changepoint analysis.
 #' @export
 
 find_changepoint_col_options <- function(DMR_output, Output_Frame = Output_Frame) {
@@ -720,11 +724,11 @@ find_changepoint_col_options <- function(DMR_output, Output_Frame = Output_Frame
 #' Add the important changepoint summary info to the dataframe from
 #' which the changepoints were found
 #'
-#' @param whole_df data frame containing all the information for one gene
-#' @param changepoint the changepoint summary
-#' @param col_name the name of the column upon which the changepoint analysis
+#' @param whole_df (df) - all the information for one gene
+#' @param changepoint (df) - the changepoint summary
+#' @param col_name (str) - the name of the column upon which the changepoint analysis
 #' is being conducted
-#' @return whole_df data frame containing information for one gene including the
+#' @return whole_df (df) - information for one gene including the
 #' changepoint summary
 #' @export
 
@@ -794,10 +798,10 @@ add_changepoint_info <- function(whole_df, changepoint, col_name) {
 #' Purpose: find the changepoints based on mean values and include error catches
 #'
 #' @inheritParams changepoint_analysis
-#' @param data the dataframe that has been subsetted for the gene and cytosine
+#' @param data (df) - the dataframe that has been subsetted for the gene and cytosine
 #' context
-#' @param penalty the penalty value to include for the changepoint analysis
-#' @return an S4 object containing the changepoint information
+#' @param penalty (int) - the penalty value to include for the changepoint analysis
+#' @return changepoint_object (S4) - containing the changepoint information
 #' @import changepoint
 #' @export
 
@@ -823,13 +827,13 @@ find_cpt_mean <- function(data, z_col, penalty){
 #'
 #' Plot the changepoint data
 #'
-#' @param data containing the cytosines with their percent methylation
-#' @param changepoint_obj the S4 object created from finding the changepoints
-#' @param gene_name the name of the gene
-#' @param penalty_val the penalty value being used
-#' @param cyt_context the cytosine context
-#' @param z_col the column upon which the changepoints are calculated
-#' @return changepoint_plot the plot of the changepoints
+#' @param data (df) - containing the cytosines with their percent methylation
+#' @param changepoint_obj (S4) - the S4 object created from finding the changepoints
+#' @param gene_name (str) - the name of the gene
+#' @param penalty_val (int) - the penalty value being used
+#' @param cyt_context (str) - the cytosine context
+#' @param z_col (str) - the column upon which the changepoints are calculated
+#' @return changepoint_plot (plot) - the plot of the changepoints
 #' @import ggplot2
 #' @import tidyverse
 #' @export
@@ -874,14 +878,14 @@ plot_changepoints <- function(data, changepoint_obj, gene_name, penalty_val,
 #' Purpose: run the changepoint analysis for each gene and each cytosine
 #' context
 #'
-#' @param whole_df containing the information such as genes, z scores, etc
-#' @param CG_penalty,CHG_penalty,CHH_penalty penalty values for the
+#' @param whole_df (df) - the information such as genes, z scores, etc
+#' @param CG_penalty,CHG_penalty,CHH_penalty (int) - penalty values for the
 #' change point analysis. The higher the value the fewer changepoints that will
 #' be created. The lower the value the more changepoints that will be created.
-#' @param z_col the name of the column to run the changepoint analysis on. This
+#' @param z_col (str) - the column to run the changepoint analysis on. This
 #' can be any column, but for DMR analysis we recommend using the z scores for
 #' a fixed effect variable.
-#' @return everything data frame containing the mean changepoint value for the
+#' @return everything (df) - data frame containing the mean changepoint value for the
 #' `z_col` column
 #' @import tibble
 #' @export
@@ -941,7 +945,9 @@ changepoint_analysis <- function(whole_df,
   close(pb)
   return(everything)
 }
-#' sound_score
+
+
+#' Sound Score
 #' @description
 #' Takes in an Output_Frame that has been broken in to changepoint regions based on a specific test statistic of interest, and creates an aggregated changepoint region file that includes summary statistics for each region, and the "sound score" a measure of the strength of a DMR within that region.
 #'
@@ -972,15 +978,16 @@ Ag_Groups$SCX<-(((Ag_Groups$Count)^(1/3))*(abs(Ag_Groups[[MethRegion_Z]])*abs(Ag
 return(Ag_Groups)
 }
 
+
 #' get_standard_methyl_bed
 #' @descrption
 #' A function to create a data frame for every individual in the experimental design without having to re run for every individual separately.
 #' This function takes in the methyl_bed file, subsets and then creates Methylated and unmethylated counts for each position to be used in the next steps.
 #'
-#' @param Methyl_bed (df) Data frame containing the ONT methylation calls in a bed file for each individual separately
-#' @param Sample_ID (str) A string that is used inplace of sample name to keep it uniform. We are using an enumerator to generate this based on the number of samples/individuals in the experiment.
-#' @param Methyl_call_type (str) A string that includes information about the type of run. Currently this package works on Megalodon , DSP (DeepSignal Plant) and Bonito.                       
-#' @return Methyl_bed_sub (df) Standard data frame methyl file for every individual with Meth, Unmeth and Per_Meth columns
+#' @param Methyl_bed (df) - Data frame containing the ONT methylation calls in a bed file for each individual separately
+#' @param Sample_ID (str) - A string that is used inplace of sample name to keep it uniform. We are using an enumerator to generate this based on the number of samples/individuals in the experiment.
+#' @param Methyl_call_type (str) - A string that includes information about the type of run. Currently this package works on Megalodon , DSP (DeepSignal Plant) and Bonito.
+#' @return Methyl_bed_sub (df) - Standard data frame methyl file for every individual with Meth, Unmeth and Per_Meth columns
 #' @import tidyverse
 #' @import stringr
 #' @examples
@@ -1012,14 +1019,14 @@ get_standard_methyl_bed <-function(Methyl_bed="Methyl.bed", Sample_ID = "S1", Me
 #' generate_megaframe
 #' @descrption
 #' A function to create a single-combined data frame from individual methyl beds in the experiment
-#' This function only works with bedfiles output from only either of the three methylation call algorithms - DeepSignal Plant(DSP), Megalodon and Bonito.  
+#' This function only works with bedfiles output from only either of the three methylation call algorithms - DeepSignal Plant(DSP), Megalodon and Bonito.
 #'
-#' @param methyl_bed_list (list) ONT methyl bed filenames for each individual contained within the directory. This will just be a list of bedfile names.
+#' @param methyl_bed_list (list) - ONT methyl bed filenames for each individual contained within the directory. This will just be a list of bedfile names.
 #' Hint : The input will be the "All_beds" vector that you create in the previous step.
-#' @param Sample_count (int) This is required to assign proper alphabet codes. If you need to include the samples from a previous round, then enter the total number of samples from the previous round here. Default is 0. By default alphabetizing starts with 'A'.
-#' @param Methyl_call_type (str) A string that includes information about the type of run. Currently this package works on Megalodon , DSP (DeepSignal Plant) and Bonito.
-#' @param File_prefix (Flexible str) This is to add a prefix to all the files that get exported and saved to the working directory while running the function.
-#' @return Megaframe(df) Clean data frame containing combined methyl bed information for every individual in the experiment.
+#' @param Sample_count (int) - This is required to assign proper alphabet codes. If you need to include the samples from a previous round, then enter the total number of samples from the previous round here. Default is 0. By default alphabetizing starts with 'A'.
+#' @param Methyl_call_type (str) - A string that includes information about the type of run. Currently this package works on Megalodon , DSP (DeepSignal Plant) and Bonito.
+#' @param File_prefix (Flexible str) - This is to add a prefix to all the files that get exported and saved to the working directory while running the function.
+#' @return Megaframe(df) - Clean data frame containing combined methyl bed information for every individual in the experiment.
 #' @import tidyverse
 #' @import stringr
 #' @export
@@ -1027,7 +1034,6 @@ get_standard_methyl_bed <-function(Methyl_bed="Methyl.bed", Sample_ID = "S1", Me
 
 
 generate_megaframe <- function(methyl_bed_list=All_beds, Sample_count = 0, Methyl_call_type="DSP",  File_prefix=""){
-  
 
   #QC
     QC <- missing(methyl_bed_list)
@@ -1039,21 +1045,21 @@ generate_megaframe <- function(methyl_bed_list=All_beds, Sample_count = 0, Methy
   if(Methyl_call_type==""){
     stop("Methylation call type cannot be blank! Provide a value before proceeding")
   }
-  
+
   if (Methyl_call_type!="DSP" & Methyl_call_type!="Megalodon" & Methyl_call_type!="Bonito"){
     stop("Methylation call not recognized, use 'DSP' or 'Megalodon' or 'Bonito', exiting!")
-    
+
   }
-  
+
   sample_number_list <- c()
   for (i in 1:(Sample_count + length(All_beds)) ){
     S_enumerator <- paste("S",i,sep="")
     sample_number_list[(length(sample_number_list) + 1)] <- list(S_enumerator)
   }
-  
+
   sample_number_list <- unlist(sample_number_list)
   sample_number <- sample_number_list[(Sample_count+1):(Sample_count+length(All_beds))]
-  
+
   cat("Creating the Megaframe \n")
 
   mylist <- c()
@@ -1076,57 +1082,57 @@ generate_megaframe <- function(methyl_bed_list=All_beds, Sample_count = 0, Methy
     }
     mylist[(length(mylist) + 1)] <- list(methyl_data) #append it to a list
     #get a list of alphabet codes and bed files - this will be saved in the experimental design starter
-    Bedfile_comb <- data.frame(sample_number[i],methyl_bed_list[i]) 
+    Bedfile_comb <- data.frame(sample_number[i],methyl_bed_list[i])
     expermental_design_df <- rbind(expermental_design_df,Bedfile_comb)
 
   }
   write.table(expermental_design_df, paste(File_prefix, "Experimental_design_starter.csv",sep="_"), row.names=F, col.names = c("ID","Bedfile"), sep=",")
-  
+
   cat("The experimental design file is now available in current directory!\n")
-  
+
   #merge the methyl beds from diff samples into a signle large data frame
   combined_methyl_beds <-Reduce(function(x, y) merge(x, y, by=c("Chromosome", "Position"), all=TRUE), c(mylist) )
-  
+
   #get Strand and CX columns to coalesce.
   Strands <- combined_methyl_beds %>% select(starts_with("Strand_")) %>% colnames()
   combined_methyl_beds$Strand <- do.call(dplyr::coalesce, combined_methyl_beds[Strands])
-  
+
   Cxs <- combined_methyl_beds %>% select(starts_with("CX_")) %>% colnames()
   combined_methyl_beds$CX <- do.call(dplyr::coalesce, combined_methyl_beds[Cxs])
-  
+
   #Remove unwanted columns
   combined_methyl_beds <- combined_methyl_beds  %>% select(-(starts_with("Strand_")), -starts_with(("CX_")))
   #Rearrange
   Megaframe <- combined_methyl_beds[,c(1:2,(ncol(combined_methyl_beds)-1),(ncol(combined_methyl_beds)),3:(ncol(combined_methyl_beds)-2) )]
-  
+
   #sanity check - to ensure no NAs in Strand and CX columns after coalesce
-  if ( (sum(is.na(Megaframe$Strand))==0 ) & 
+  if ( (sum(is.na(Megaframe$Strand))==0 ) &
        sum(is.na(Megaframe$CX))==0 ) {
     cat('QC : Megaframe looks good, Proceed to Zoomframe \n')
   } else {
     cat('QC: Strand and CX should not have NAs, re-run the megaframe function \n')
   }
-  
+
   write.table(Megaframe, paste(File_prefix, "MegaFrame.csv",sep="_"), row.names=F, sep=",")
-  
+
   cat("Megaframe is now available in current directory and in the R-env!")
-  
+
   colnames(expermental_design_df) = c("ID","Library")
-  
+
   #QC : Filter rows/sample with missing data
   rowSums(is.na(Megaframe))->Megaframe$NAs
   #make a histogram
 
   cat("QC: The plot provides information about missing data that can be filtered out in the next step by using the filter_NAs parameter \n")
-  QCplot <- suppressMessages(ggplot(Megaframe, aes(x=NAs/3))+geom_histogram(bins=30) + 
-                               labs(title = "Missing data per sample") + 
-                               xlab("Sample") + 
+  QCplot <- suppressMessages(ggplot(Megaframe, aes(x=NAs/3))+geom_histogram(bins=30) +
+                               labs(title = "Missing data per sample") +
+                               xlab("Sample") +
                                ylab("Number of rows with missing data"))
-  
+
   print(QCplot)
-  
+
   Megaframe_list <- list(Megaframe,expermental_design_df)
-  
+
   return (Megaframe_list)
 }
 
@@ -1140,17 +1146,16 @@ generate_megaframe <- function(methyl_bed_list=All_beds, Sample_count = 0, Methy
 #' 2- Anything that is between Adaptive start and Adaptive Stop
 #' 0- Anything that doesn't fall within in the above - to ensure we don't include these in the DMR analysis.
 #'
-#' @param target (df) Subset of ONT-methyl bed to positions pertaining to a single gene at a time
-#' @param geneco_index (int) This is index that refers to the row number of the geneco df, required to assign proper Alphabet codes. 
-#' @param gcoord_exist (Boolean) This is to use the function only the gene_cord_df file has the location of the gene.
-#' @param Gene_col (str) Use this column to specifify wether to add Gene Names or Ids in the Zoomframe.
-#' @return Zoomframe (df) Similar to Megaframe except this includes more information on targets, positions zero'ed to ATG for each target and a few other information with an additional column that included zoom codes
+#' @param target (df) - Subset of ONT-methyl bed to positions pertaining to a single gene at a time
+#' @param geneco_index (int) - This is index that refers to the row number of the geneco df, required to assign proper Alphabet codes.
+#' @param gcoord_exist (Boolean) - This is to use the function only the gene_cord_df file has the location of the gene.
+#' @param Gene_col (str) - Use this column to specifify wether to add Gene Names or Ids in the Zoomframe.
+#' @return Zoomframe (df) - Similar to Megaframe except this includes more information on targets, positions zero'ed to ATG for each target and a few other information with an additional column that included zoom codes
 #' @import tidyverse
 #' @import stringr
 #' @export
 
 add_zoom_coords <- function(target=Gene_subset, geneco_index=i, gcoord_exist=TRUE, Gene_col="Gene_name") {
-
 
   if(gcoord_exist==TRUE){
     for (i in 1:nrow(target)) {
@@ -1182,14 +1187,14 @@ add_zoom_coords <- function(target=Gene_subset, geneco_index=i, gcoord_exist=TRU
 #'
 #' A function to create a single-merged data frame from individual methyl beds in the experiment
 #'
-#' @param gene_cord_df (df) Data frame containing gene-coordinate info
-#' @param MFrame (df) Megaframe data from the previous function
-#' @param File_prefix (Flexible str) This is to add a prefix to all the files that get exported while running the function.
-#' @param filter_NAs (int) Select this parameter based on the histogram plot. This will filter out NAs based on per sample
-#' @param target_info (Boolean) This takes in TRUE or FALSE. Enter TRUE only if the megaframe contains target genes that need to be differentiated from non-targets. 
-#' @param gene_list (list) Provide a list of target genes to distiguish from non-target genes within the Zoomframe. By deafult it will take in the All the genes from the gene coordinates file.
+#' @param gene_cord_df (df) - Data frame containing gene-coordinate info
+#' @param MFrame (df) - Megaframe data from the previous function
+#' @param File_prefix (Flexible str) - This is to add a prefix to all the files that get exported while running the function.
+#' @param filter_NAs (int) - Select this parameter based on the histogram plot. This will filter out NAs based on per sample
+#' @param target_info (Boolean) - This takes in TRUE or FALSE. Enter TRUE only if the megaframe contains target genes that need to be differentiated from non-targets.
+#' @param gene_list (list) - Provide a list of target genes to distiguish from non-target genes within the Zoomframe. By deafult it will take in the All the genes from the gene coordinates file.
 #' @inheritParams add_zoom_coords
-#' @return Zoomframe (df) Similar to Megaframe except this includes more information on targets, positions zero'ed to ATG for each target and a few other information.
+#' @return Zoomframe (df) - Similar to Megaframe except this includes more information on targets, positions zero'ed to ATG for each target and a few other information.
 #' @import tidyverse
 #' @import stringr
 #' @export
@@ -1226,7 +1231,7 @@ generate_zoomframe <- function(gene_cord_df = gene_cord_df, MFrame = Megaframe, 
   Final_gene_set <- Final_gene_set[,c(1,(ncol(Final_gene_set)-2),2:4,5:(ncol(Final_gene_set)-3),ncol(Final_gene_set)-1,ncol(Final_gene_set))]
 
   cat("Zoomframe generated, Adding in target info column; Almost done!\n")
-  
+
   #Clean up columns with NAs
   Meth_Unmeth <- Final_gene_set %>% select(starts_with("Meth"), starts_with("UnMeth")) %>% colnames()
   cat("Columns to change NAs -> 0s\n" , Meth_Unmeth)
@@ -1237,14 +1242,14 @@ generate_zoomframe <- function(gene_cord_df = gene_cord_df, MFrame = Megaframe, 
     for (i in 1:nrow(Final_gene_set)){
     if (Final_gene_set$Gene[i] %in% gene_list){
       Final_gene_set$Target_info[i] <- "T"
-    }                                           
+    }
       else {
         Final_gene_set$Target_info[i] <- "NT"
      }
    }
   }
 
-  
+
   write.table(Final_gene_set, paste(File_prefix, "ZoomFrame.csv",sep="_"), row.names=F, sep=",")
   cat("\nZoomframe is available in your current directory!")
 
