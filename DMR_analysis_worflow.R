@@ -45,10 +45,10 @@ Zoomframe <- generate_zoomframe(gene_cord_df = Geneco, MFrame = Megaframe, Gene_
 #------------
 
 # The colnames of interest. This will be carried through the rest of the analysis
-colnames_of_interest <- c('Chromosome', 'Gene', 'Position', 'Strand', 'CX', 
+required_columns <- c('Chromosome', 'Gene', 'Position', 'Strand', 'CX', 
                           'Zeroth_pos', 'Plant')
 
-dmr_obj <- create_dmr_obj(Zoomframe, experimental_design_df, colnames_of_interest)
+dmr_obj <- create_dmr_obj(Zoomframe, experimental_design_df, required_columns)
 
 #-----------------------------------
 # Creating Methylation Summary Data
@@ -71,7 +71,7 @@ if (sum(GenePercentPlant$Zeroth_pos == dmr_obj$Zoomframe_filtered$Zeroth_pos) !=
 # Creating Differential Methylation Output File
 #-----------------------------------------------
 
-Output_Frame <- create_output_frame(dmr_obj, GenePercentPlant, GeneDepthPlant,
+methyl_summary <- create_methyl_summary(dmr_obj, GenePercentPlant, GeneDepthPlant,
                                     GenePercentGroup, control = 'C')
 
 
@@ -80,28 +80,28 @@ Output_Frame <- create_output_frame(dmr_obj, GenePercentPlant, GeneDepthPlant,
 #--------------------
 
 # Run the Group DMR analysis
-Output_Frame <- DMR(Output_Frame, dmr_obj
+methyl_summary <- DMR(methyl_summary, dmr_obj,
                     fixed = c('Group'), random = c('Plant'), 
-                    colnames_of_interest, reads_threshold = 3,
+                    required_columns, reads_threshold = 3, control = 'C',
                     model = 'binomial', analysis_type = 'group')
 
 #----------------
 # Individual DMR
 #----------------
 # Run the Individual DMR analysis
-Output_Frame <- DMR(Output_Frame, dmr_obj, 
+methyl_summary <- DMR(methyl_summary, dmr_obj, 
                     fixed = c('Group'), random = c('Individual'), 
-                    reads_threshold = 5, control = 'C', 
+                    required_columns, reads_threshold = 5, control = 'C', 
                     model = 'beta-binomial', analysis_type = 'individual')
 
 #----------------------
 # Changepoint Analysis
 #----------------------
 # Get the potential column names to run changepoint analysis on
-changepoint_cols = find_changepoint_col_options(Output_Frame)
+changepoint_cols = find_changepoint_col_options(methyl_summary)
 
 # Run the changepoint_analysis function
-Output_Frame <- changepoint_analysis(Output_Frame, CG_penalty = 9, CHG_penalty = 4, 
+methyl_summary <- changepoint_analysis(methyl_summary, CG_penalty = 9, CHG_penalty = 4, 
                               CHH_penalty = 7, z_col = 'Z_Zeb_Concentration_small')
 
 
