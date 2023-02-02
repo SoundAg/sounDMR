@@ -3,4 +3,6 @@
 !*.Rmd
 !*.tar.gz
 !*.md
+!*.csv
+!*.bed
 !.gitignore
