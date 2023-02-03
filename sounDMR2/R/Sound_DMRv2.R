@@ -53,7 +53,7 @@ create_gene_percent_x <- function(LongPercent, x = 'Chromosome',
 #' removes rows where the mean methylation is 0.
 #'
 #' @param ZoomFrame (df) containing the input methylation data
-#' @param expermental_design_df (df) containing the experimental design
+#' @param experimental_design_df (df) containing the experimental design
 #' @param colnames_of_interest *optional* (list of strings) - the columns to keep
 #' in the analysis
 #' @return out (list) - is a list of dataframes. This is the dmr object.
@@ -61,7 +61,7 @@ create_gene_percent_x <- function(LongPercent, x = 'Chromosome',
 #' @export
 
 create_dmr_obj <- function(ZoomFrame = dataframe,
-                       expermental_design_df = dataframe,
+                       experimental_design_df = dataframe,
                        colnames_of_interest = c('Chromosome', 'Gene', 'Position',
                                                'Strand', 'CX', 'Zeroth_pos',
                                                'Individual')) {
@@ -74,7 +74,7 @@ create_dmr_obj <- function(ZoomFrame = dataframe,
   #QC Make sure the correct columns are present
   print('Step 2: checking for missing columns in experimental id')
   for (col in colnames_of_interest) {
-    if (!col %in% colnames(ZoomFrame_filtered) & !col %in% c('Individual', 'Plant'){
+    if (!col %in% colnames(ZoomFrame_filtered) & !col %in% c('Individual', 'Plant')){
       print(paste(col, 'not found in the ZoomFrame_filtered'))
     }
   }
@@ -92,24 +92,24 @@ create_dmr_obj <- function(ZoomFrame = dataframe,
     print('Gene column not found, running analysis on Chromosome column')
     ZoomFrame_filtered$Gene <- ZoomFrame_filtered$Chromosome
   }
-  if (!'Plant' %in% colnames(expermental_design_df) & !'Individual' %in% colnames(expermental_design_df)) {
+  if (!'Plant' %in% colnames(experimental_design_df) & !'Individual' %in% colnames(experimental_design_df)) {
     stop('No Plant or Individual column name found in Experimental ID. One is necessary to continue')
   }
-  if (!'Plant' %in% colnames(expermental_design_df)) {
+  if (!'Plant' %in% colnames(experimental_design_df)) {
     print('Plant column not found in the Experimental ID, using Individual')
-    expermental_design_df$Plant <- expermental_design_df$Individual
+    experimental_design_df$Plant <- experimental_design_df$Individual
   }
-  if (!'Individual' %in% colnames(expermental_design_df)) {
+  if (!'Individual' %in% colnames(experimental_design_df)) {
     print('Individual column not found in the Experimental ID, using Plant')
-    expermental_design_df$Individual <- expermental_design_df$Plant
+    experimental_design_df$Individual <- experimental_design_df$Plant
   }
-  if (!'Individual_Name' %in% colnames(expermental_design_df)) {
+  if (!'Individual_Name' %in% colnames(experimental_design_df)) {
     print('Individual_Name column not found in the Experimental_ID, using Plant')
-    expermental_design_df$Individual_Name <- expermental_design_df$Plant
+    experimental_design_df$Individual_Name <- experimental_design_df$Plant
   }
 
   # Convert the experimental ID 'Plant' column to character
-  expermental_design_df$Plant <- as.character(expermental_design_df$Plant)
+  experimental_design_df$Plant <- as.character(experimental_design_df$Plant)
 
   # We want to order the input frame in such a way that it will be easy to recreate analysis
   print('Step 3: reordering ZoomFrame_filtered')
@@ -141,18 +141,18 @@ create_dmr_obj <- function(ZoomFrame = dataframe,
   LongMeth$Individual <- gsub("Meth_","", LongMeth$Individual, perl = T)
 
   #QC to check that LongPercent contains the correct number of rows
-  if (nrow(LongPercent) == nrow(ZoomFrame_filtered) * nrow(expermental_design_df)) {
+  if (nrow(LongPercent) == nrow(ZoomFrame_filtered) * nrow(experimental_design_df)) {
     print('LongPercent contains the expected number of rows')
   } else {
     print(paste('LongPercent contains', nrow(LongPercent), 'rows. Expected:',
-                (nrow(Zoom_Frame_filtered) * nrow(expermental_design_df)), 'rows'))
+                (nrow(Zoom_Frame_filtered) * nrow(experimental_design_df)), 'rows'))
   }
 
-  print('Step 5: merging long files with expermental_design_df to annotate')
+  print('Step 5: merging long files with experimental_design_df to annotate')
   # Merge Long files with Exp_ID to annotate
-  print('Step 6: annotating long files with expermental_design data frame')
-  LongPercent <- dplyr::left_join(LongPercent, expermental_design_df, by = c('Individual' = 'ID'))
-  LongMeth <- dplyr::left_join(LongMeth, expermental_design_df, by = c('Individual' = 'ID'))
+  print('Step 6: annotating long files with experimental_design data frame')
+  LongPercent <- dplyr::left_join(LongPercent, experimental_design_df, by = c('Individual' = 'ID'))
+  LongMeth <- dplyr::left_join(LongMeth, experimental_design_df, by = c('Individual' = 'ID'))
 
   # Aggregate
   print('Step 7: aggregating by plant')
@@ -172,7 +172,7 @@ create_dmr_obj <- function(ZoomFrame = dataframe,
   out$LongPercent <- LongPercent
   out$LonUnMeth <- LongUnMeth
   out$LongMeth <- LongMeth
-  out$expermental_design_df <- expermental_design_df
+  out$experimental_design_df <- experimental_design_df
   out$Inputpers <- Inputpers
 
   return(out)
@@ -184,7 +184,7 @@ create_dmr_obj <- function(ZoomFrame = dataframe,
 #' Keep only the necessary columns from a given data frame
 #'
 #' @param df (df) data frame to subset
-#' @inheritParams clean_data
+#' @inheritParams create_dmr_obj
 #' @return subsetted_df (df) - data frame with only the columns of interest
 #' @examples
 #' # Generate data to subset
@@ -217,7 +217,7 @@ subset_cols <- function(df,
 #' @param data (df) - the `ZoomFrame_filtered`
 #' @param starts_with_cols (str) - the string pattern that the columns start with
 #' @inheritParams tidyr::pivot_longer
-#' @inheritParams clean_data
+#' @inheritParams create_dmr_obj
 #' @return pivoted_and_subsetted_df (df) - the cleaned data frame that has been
 #' pivoted to be longer and subsetted to only include the important columns.
 #' @import tidyr
@@ -292,12 +292,22 @@ create_cols_for_individuals <- function(Exp_ID_Treated,
 #' @export
 create_methyl_summary <- function(dmr_obj, GenePercentPlant,
                                 GeneDepthPlant, GenePercentGroup,
-                                control = 'C') {
+                                control = 'C', colnames_of_interest) {
+  
+  # QC
+  # Make sure the GenePercentX dfs are the same length as the Zoomframe_filtered
+  # and in the same order
+  if (sum(GenePercentPlant$Zeroth_pos == dmr_obj$ZoomFrame_filtered$Zeroth_pos) != nrow(dmr_obj$ZoomFrame_filtered) |
+      sum(GenePercentPlant$Gene == dmr_obj$ZoomFrame_filtered$Gene) != nrow(dmr_obj$ZoomFrame_filtered)) {
+    print('Output is in a different order. Try running again.')
+  }
+  
+  
   # Create experimental_design_df_treated
   experimental_design_df_treated <- dmr_obj$experimental_design_df[dmr_obj$experimental_design_df$Group != control,]
 
   # Create the beginnings of the Output statistic data frame
-  Output_Frame <- data[,colnames_of_interest[-length(colnames_of_interest)]]
+  Output_Frame <- dmr_obj$ZoomFrame_filtered[,colnames_of_interest[-length(colnames_of_interest)]]
 
   # Create 3 new cols for each individual
   Output_Frame <- create_cols_for_individuals(experimental_design_df_treated,
@@ -307,11 +317,11 @@ create_methyl_summary <- function(dmr_obj, GenePercentPlant,
 
   # QC
   # Checking Output_Frame created the three new cols for each individual
-  if (ncol(Output_Frame) == (length(colnames_of_interest) - 1) + 3 * length(unique(Exp_ID_Treated$Plant))) {
+  if (ncol(Output_Frame) == (length(colnames_of_interest) - 1) + 3 * length(unique(experimental_design_df_treated$Plant))) {
     print('Number of columns in Output_Frame is correct')
   } else {
     print('The number of columns in Output_Frame is incorrect. Double check there are no duplicates')
-    print(paste('Expected:', (length(colnames_of_interest) - 1) + 3 * length(unique(Exp_ID_Treated$Plant)),
+    print(paste('Expected:', (length(colnames_of_interest) - 1) + 3 * length(unique(experimental_design_df_treated$Plant)),
                 'Found:', ncol(Output_Frame)))
   }
 
@@ -370,7 +380,7 @@ create_fixed_effects <- function(fixed = c('effect1', 'effect2')) {
 #'
 #' # Create random effects with an interaction
 #' > create_random_effects(c("Group * Individual"))
-#' [1] "(1 | Group * Individual)
+#' [1] "(1 | Group * Individual)"
 #'
 #' @export
 
@@ -546,7 +556,7 @@ run_model <- function(data, i, Output_Frame, formula, model_type,
 #' @param Output_Frame (df) - the read depth and methylation
 #' change information
 #' @param ZoomFrame_filtered (df) - the percent methylation information
-#' @param expermental_design_df (df) - the experimental design
+#' @param experimental_design_df (df) - the experimental design
 #' @inheritParams create_formula
 #' @param reads_threshold (int) - the number of reads that are each
 #' methylated and unmethylated. This is important since data containing only one
@@ -558,7 +568,7 @@ run_model <- function(data, i, Output_Frame, formula, model_type,
 #' @return Output_Frame (df) - Output_Frame with the summary statistics from the model
 #' @export
 
-group_DMR <- function(Output_Frame, ZoomFrame_filtered, expermental_design_df, fixed = c('Group'),
+group_DMR <- function(Output_Frame, ZoomFrame_filtered, experimental_design_df, fixed = c('Group'),
                       random = c('Plant'), reads_threshold = 3, model = 'binomial',
                       colnames_of_interest = c('Chromosome', 'Gene', 'Position', 'Strand', 'CX',
                                                'Zeroth_pos', 'Individual')) {
@@ -590,8 +600,8 @@ group_DMR <- function(Output_Frame, ZoomFrame_filtered, expermental_design_df, f
                               colnames_of_interest = c('Chromosome', 'Gene', 'Position', 'Strand', 'CX',
                                                        'Zeroth_pos', 'Individual'))
       LM <- cbind(LM,LUM[,ncol(LUM)])
-      # Merge with expermental_design_df to allow for DML testing for that base
-      LM <- merge(LM, expermental_design_df, by.x="Individual",by.y="ID", all=FALSE)
+      # Merge with experimental_design_df to allow for DML testing for that base
+      LM <- merge(LM, experimental_design_df, by.x="Individual",by.y="ID", all=FALSE)
 
       # Has to have Y unmethylated reads across all individuials
       if(sum(as.numeric(LM$UnMeth), na.rm=TRUE) >= reads_threshold){
@@ -617,7 +627,7 @@ group_DMR <- function(Output_Frame, ZoomFrame_filtered, expermental_design_df, f
 #' @return Output_Frame (df) - a data frame with additional columns
 #' @export
 
-individual_DMR <- function(Output_Frame, ZoomFrame_filtered, Exp_ID_Treated,
+individual_DMR <- function(Output_Frame, ZoomFrame_filtered, experimental_design_df,
                            fixed = c('Group'), random = c('Individual'),
                            reads_threshold = 3, control = 'C', model = 'beta-binomial',
                            colnames_of_interest = c('Chromosome', 'Gene', 'Position',
@@ -626,6 +636,8 @@ individual_DMR <- function(Output_Frame, ZoomFrame_filtered, Exp_ID_Treated,
   # Obtain the formula
   formula <- create_formula(fixed, random)
   print(formula)
+  
+  Exp_ID_Treated <- experimental_design_df[experimental_design_df$Group == 'T',]
 
   # Create a progress bar
   pb = txtProgressBar(min = 0, max = nrow(Output_Frame), initial = 0, style = 3)
@@ -641,7 +653,7 @@ individual_DMR <- function(Output_Frame, ZoomFrame_filtered, Exp_ID_Treated,
       LUM <- pivot_and_subset(ZoomFrame_filtered[i,], 'UnMeth', 'UnMeth',
                               colnames_of_interest)
       LM <- cbind(LM, LUM[,ncol(LUM)])
-      LM <- merge(LM, expermental_design_df, by.x="Individual", by.y="ID", all=FALSE)
+      LM <- merge(LM, experimental_design_df, by.x="Individual", by.y="ID", all=FALSE)
 
       #Here we return to the Exp_ID_Treated file, this file has only individuals that are in a treated group. Starting with the first row in this file.
       for(k in 1:nrow(Exp_ID_Treated)){
@@ -676,7 +688,7 @@ individual_DMR <- function(Output_Frame, ZoomFrame_filtered, Exp_ID_Treated,
 #' @return Output_Frame (df)
 #' @export
 
-DMR <- function(Output_Frame, dmr_obj, fixed = c('Group'),
+find_DMR <- function(Output_Frame, dmr_obj, fixed = c('Group'),
                 random = c('Plant'), colnames_of_interest, reads_threshold = 3,
                 model, control = '', analysis_type) {
   if (tolower(analysis_type) == 'group') {
@@ -960,27 +972,27 @@ changepoint_analysis <- function(whole_df,
 
 sound_score <- function(changepoint_OF = dataframe, Statistic="Z_GroupT_small", Per_Change = "Treat_V_Control", other_columns=c("Control", "Estimate_GroupT_small")) {
   # Determine proper column names givwen the test statistic of interest
-  paste("MethGroup_",Statistic, sep = "")->MethGroup
-  paste("MethRegion_",Statistic, sep = "")->MethRegion_Z
-  paste("MethRegionLength_",Statistic, sep = "")->MethRegion_Length
+  MethGroup <- paste("MethGroup_",Statistic, sep = "")
+  MethRegion_Z <- paste("MethRegion_",Statistic, sep = "")
+  MethRegion_Length <- paste("MethRegionLength_",Statistic, sep = "")
   # Create vector of columns that include information that the user wants aggregated across each changepoint region.  Includes Statistic, Per_Change, region length, and any other columns of interest.
   c(MethRegion_Z, MethRegion_Length,Per_Change, other_columns )->keep_cols
   # Create new dataframe that includes a new column that has a column for every unique changepoint region
-  within(changepoint_OF, cp_group <- paste(Gene,CX,changepoint_OF[[MethGroup]], sep='_'))-> cp_OF
+  cp_OF <- within(changepoint_OF, cp_group <- paste(Gene,CX,changepoint_OF[[MethGroup]], sep='_'))
   #Calculate statistics and aggregate for every region
-  cp_OF %>%
-    group_by(cp_group) %>%
-    mutate(Count = n()) %>%
-    group_by(cp_group, Count) %>%
-    summarise_at(vars(one_of(keep_cols)), mean)->Ag_Groups
+  Ag_Groups <- cp_OF %>%
+              group_by(cp_group) %>%
+              mutate(Count = n()) %>%
+              group_by(cp_group, Count) %>%
+              summarise_at(vars(one_of(keep_cols)), mean)
   #Calculate Sound Statistic
-Ag_Groups$SCX<-(((Ag_Groups$Count)^(1/3))*(abs(Ag_Groups[[MethRegion_Z]])*abs(Ag_Groups[[Per_Change]]))^(1/2))
+Ag_Groups$dmr_score<-(((Ag_Groups$Count)^(1/3))*(abs(Ag_Groups[[MethRegion_Z]])*abs(Ag_Groups[[Per_Change]]))^(1/2))
 return(Ag_Groups)
 }
 
 
 #' get_standard_methyl_bed
-#' @descrption
+#' @description
 #' A function to create a data frame for every individual in the experimental design without having to re run for every individual separately.
 #' This function takes in the methyl_bed file, subsets and then creates Methylated and unmethylated counts for each position to be used in the next steps.
 #'
@@ -990,9 +1002,6 @@ return(Ag_Groups)
 #' @return Methyl_bed_sub (df) - Standard data frame methyl file for every individual with Meth, Unmeth and Per_Meth columns
 #' @import tidyverse
 #' @import stringr
-#' @examples
-#' # Basic usage for methyl_call_type
-#' get_standard_methyl_bed(Methyl_call_type="DSP") OR  get_standard_methyl_bed(Methyl_call_type="Megalodon") OR get_standard_methyl_bed(Methyl_call_type="Bonito")
 #' @export
 
 get_standard_methyl_bed <-function(Methyl_bed="Methyl.bed", Sample_ID = "S1", Methyl_call_type="") {
@@ -1017,29 +1026,32 @@ get_standard_methyl_bed <-function(Methyl_bed="Methyl.bed", Sample_ID = "S1", Me
 
 
 #' generate_megaframe
-#' @descrption
+#' @description
 #' A function to create a single-combined data frame from individual methyl beds in the experiment
 #' This function only works with bedfiles output from only either of the three methylation call algorithms - DeepSignal Plant(DSP), Megalodon and Bonito.
 #'
 #' @param methyl_bed_list (list) - ONT methyl bed filenames for each individual contained within the directory. This will just be a list of bedfile names.
-#' Hint : The input will be the "All_beds" vector that you create in the previous step.
+#' Hint : The input will be the "methyl_bed_list" vector that you create in the previous step.
 #' @param Sample_count (int) - This is required to assign proper alphabet codes. If you need to include the samples from a previous round, then enter the total number of samples from the previous round here. Default is 0. By default alphabetizing starts with 'A'.
 #' @param Methyl_call_type (str) - A string that includes information about the type of run. Currently this package works on Megalodon , DSP (DeepSignal Plant) and Bonito.
 #' @param File_prefix (Flexible str) - This is to add a prefix to all the files that get exported and saved to the working directory while running the function.
 #' @return Megaframe(df) - Clean data frame containing combined methyl bed information for every individual in the experiment.
 #' @import tidyverse
 #' @import stringr
+#' @examples
+#' # Basic usage for methyl_call_type
+#' > generate_megaframe(Methyl_call_type="DSP") OR  get_standard_methyl_bed(Methyl_call_type="Megalodon") OR get_standard_methyl_bed(Methyl_call_type="Bonito")
 #' @export
 
 
 
-generate_megaframe <- function(methyl_bed_list=All_beds, Sample_count = 0, Methyl_call_type="DSP",  File_prefix=""){
+generate_megaframe <- function(methyl_bed_list="All_methyl_beds", Sample_count = 0, Methyl_call_type="DSP",  File_prefix=""){
 
   #QC
     QC <- missing(methyl_bed_list)
   if(QC==TRUE){
     stop("methyl_bed_list parameter cannot be empty.
-         Hint: Use All_beds vector you create in the previous step")
+         Hint: Use methyl_bed_list vector you create in the previous step")
   }
 
   if(Methyl_call_type==""){
@@ -1052,18 +1064,18 @@ generate_megaframe <- function(methyl_bed_list=All_beds, Sample_count = 0, Methy
   }
 
   sample_number_list <- c()
-  for (i in 1:(Sample_count + length(All_beds)) ){
+  for (i in 1:(Sample_count + length(methyl_bed_list)) ){
     S_enumerator <- paste("S",i,sep="")
     sample_number_list[(length(sample_number_list) + 1)] <- list(S_enumerator)
   }
 
   sample_number_list <- unlist(sample_number_list)
-  sample_number <- sample_number_list[(Sample_count+1):(Sample_count+length(All_beds))]
+  sample_number <- sample_number_list[(Sample_count+1):(Sample_count+length(methyl_bed_list))]
 
   cat("Creating the Megaframe \n")
 
   mylist <- c()
-  expermental_design_df <- data.frame()
+  experimental_design_df <- data.frame()
   for (i in 1:length(methyl_bed_list)){ #Iterate through methyl beds one by one
     #import the bed file
     import_bedfile <- data.frame(purrr::map(methyl_bed_list[i], ~read.csv(.x, sep="\t", header=FALSE)))
@@ -1083,10 +1095,10 @@ generate_megaframe <- function(methyl_bed_list=All_beds, Sample_count = 0, Methy
     mylist[(length(mylist) + 1)] <- list(methyl_data) #append it to a list
     #get a list of alphabet codes and bed files - this will be saved in the experimental design starter
     Bedfile_comb <- data.frame(sample_number[i],methyl_bed_list[i])
-    expermental_design_df <- rbind(expermental_design_df,Bedfile_comb)
+    experimental_design_df <- rbind(experimental_design_df,Bedfile_comb)
 
   }
-  write.table(expermental_design_df, paste(File_prefix, "Experimental_design_starter.csv",sep="_"), row.names=F, col.names = c("ID","Bedfile"), sep=",")
+  write.table(experimental_design_df, paste(File_prefix, "Experimental_design_starter.csv",sep="_"), row.names=F, col.names = c("ID","Bedfile"), sep=",")
 
   cat("The experimental design file is now available in current directory!\n")
 
@@ -1117,7 +1129,7 @@ generate_megaframe <- function(methyl_bed_list=All_beds, Sample_count = 0, Methy
 
   cat("Megaframe is now available in current directory and in the R-env!")
 
-  colnames(expermental_design_df) = c("ID","Library")
+  colnames(experimental_design_df) = c("ID","Library")
 
   #QC : Filter rows/sample with missing data
   rowSums(is.na(Megaframe))->Megaframe$NAs
@@ -1131,7 +1143,7 @@ generate_megaframe <- function(methyl_bed_list=All_beds, Sample_count = 0, Methy
 
   print(QCplot)
 
-  Megaframe_list <- list(Megaframe,expermental_design_df)
+  Megaframe_list <- list(Megaframe,experimental_design_df)
 
   return (Megaframe_list)
 }
@@ -1155,15 +1167,15 @@ generate_megaframe <- function(methyl_bed_list=All_beds, Sample_count = 0, Methy
 #' @import stringr
 #' @export
 
-add_zoom_coords <- function(target=Gene_subset, geneco_index=i, gcoord_exist=TRUE, Gene_col="Gene_name") {
+add_zoom_coords <- function(target, geneco_index, gcoord_exist=TRUE, Gene_col="Gene_name") {
 
   if(gcoord_exist==TRUE){
     for (i in 1:nrow(target)) {
-      if (gene_cord_df[[Gene_col]][geneco_index]==target$Gene[i]){
-        if((target$Position[i]>=gene_cord_df$Low[geneco_index]) & (target$Position[i]<=gene_cord_df$High[geneco_index]) ) {
+      if (Geneco[[Gene_col]][geneco_index]==target$Gene[i]){
+        if((target$Position[i]>=Geneco$Low[geneco_index]) & (target$Position[i]<=Geneco$High[geneco_index]) ) {
           target$Zoom_co[i] <- 1 #Gene body region
 
-        } else if ((target$Position[i]>=gene_cord_df$Adapt_Low[geneco_index]) & (target$Position[i]<=gene_cord_df$Adapt_High[geneco_index])) {
+        } else if ((target$Position[i]>=Geneco$Adapt_Low[geneco_index]) & (target$Position[i]<=Geneco$Adapt_High[geneco_index])) {
             target$Zoom_co[i] <- 2 #Adaptive sequence region
 
         } else {
@@ -1199,7 +1211,7 @@ add_zoom_coords <- function(target=Gene_subset, geneco_index=i, gcoord_exist=TRU
 #' @import stringr
 #' @export
 
-generate_zoomframe <- function(gene_cord_df = gene_cord_df, MFrame = Megaframe, Gene_col="Gene_name", filter_NAs=0, target_info=TRUE, gene_list = Geneco$Gene_name, File_prefix="") {
+generate_zoomframe <- function(gene_cord_df, MFrame , Gene_col="Gene_name", filter_NAs=0, target_info=TRUE, gene_list = Geneco$Gene_name, File_prefix="") {
 
   #set the filter based on how stringent it needs to be based on the plot
   MFrame[MFrame$NAs<(filter_NAs*3),]->MFrame
@@ -1220,7 +1232,7 @@ generate_zoomframe <- function(gene_cord_df = gene_cord_df, MFrame = Megaframe, 
           Gene_subset$Zeroth_pos <-  (gene_cord_df$High[i]- Gene_subset$Position) #reorienting the anti-sense genes
         }
         #Call the add_zoom_coords function to add Zoom_co-ordinates
-        Target_df <- add_zoom_coords(Gene_subset,i, TRUE)
+        Target_df <- add_zoom_coords(target=Gene_subset,geneco_index=i, gcoord_exist=TRUE, Gene_col="Gene_name")
         Final_gene_set <- rbind(Final_gene_set,Target_df) #append it to a Final dataframe
       }
     }

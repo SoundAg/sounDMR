@@ -10,7 +10,7 @@ library(sounDMR2)
 #It is necessary for the gene coordinates file to be in the below format to ensure the code works.  
 #Chromosome | Low   | High  | Gene_name	| Strand    | Gene_length   | Adapt_Low | Adapt_High
 
-Geneco <- read.table(file.choose(), header=TRUE, sep="\t")
+Geneco <- read.table(file.choose(), header=TRUE, sep=",")
 
 
 #-------------------------
@@ -24,7 +24,7 @@ All_methyl_beds <- list.files(path=".",pattern="*_methyl.bed")
 #-------------------------
 # Create Megaframe
 #-------------------------
-Megalist <- generate_megaframe(methyl_bed_list=All_methyl_beds, Sample_count = 0, Methyl_call_type="",  File_prefix="")
+Megalist <- generate_megaframe(methyl_bed_list=All_methyl_beds, Sample_count = 0, Methyl_call_type="DSP",  File_prefix="Sample")
 
 Megaframe <- Megalist[[1]]
 experimental_design_df <- Megalist[[2]]
@@ -32,10 +32,13 @@ experimental_design_df <- Megalist[[2]]
 #P.S The experimental_design starter doesn't have any information with respect to treatments, rounds etc. 
 #Make sure to add it for DMR analysis
 
+
+
+
 #-------------------------
 # Read In Methyl.bed Files
 #-------------------------
-Zoomframe <- generate_zoomframe(gene_cord_df = Geneco, MFrame = Megaframe, Gene_col="Gene_name", filter_NAs=0, target_info=TRUE, gene_list = Geneco$Gene_name, File_prefix="")
+Zoomframe <- generate_zoomframe(gene_cord_df = Geneco, MFrame = Megaframe, Gene_col="Gene_name", filter_NAs=2, target_info=TRUE, gene_list = Geneco$Gene_name, File_prefix="Sample")
 
 
 #-----------------------------------------------------Part 2 : DMR analysis----------------------------------------------------------------------------------------------------------
@@ -58,13 +61,6 @@ GeneDepthPlant <- dcast(dmr_obj$LongMeth,Gene*Zeroth_pos~Plant,mean,
 GenePercentGroup <- create_gene_percent_x(dmr_obj$LongPercent, 'Group', mean)
 GenePercentPlant <- create_gene_percent_x(dmr_obj$LongPercent, 'Plant', mean)
 
-# QC
-# Make sure the GenePercentX dfs are the same length as the Zoomframe_filtered
-# and in the same order
-if (sum(GenePercentPlant$Zeroth_pos == dmr_obj$Zoomframe_filtered$Zeroth_pos) != nrow(dmr_obj$Zoomframe_filtered) |
-    sum(GenePercentPlant$Gene == dmr_obj$Zoomframe_filtered$Gene) != nrow(dmr_obj$Zoomframe_filtered)) {
-  print('Output is in a different order. Try running again.')
-}
 
 
 #-----------------------------------------------
@@ -72,7 +68,7 @@ if (sum(GenePercentPlant$Zeroth_pos == dmr_obj$Zoomframe_filtered$Zeroth_pos) !=
 #-----------------------------------------------
 
 methyl_summary <- create_methyl_summary(dmr_obj, GenePercentPlant, GeneDepthPlant,
-                                    GenePercentGroup, control = 'C')
+                                    GenePercentGroup, control = 'C', colnames_of_interest=required_columns)
 
 
 #--------------------
@@ -80,18 +76,18 @@ methyl_summary <- create_methyl_summary(dmr_obj, GenePercentPlant, GeneDepthPlan
 #--------------------
 
 # Run the Group DMR analysis
-methyl_summary <- DMR(methyl_summary, dmr_obj,
+methyl_summary <- find_DMR(methyl_summary, dmr_obj,
                     fixed = c('Group'), random = c('Plant'), 
-                    required_columns, reads_threshold = 3, control = 'C',
+                    colnames_of_interest = required_columns, reads_threshold = 3, control = 'C',
                     model = 'binomial', analysis_type = 'group')
 
 #----------------
 # Individual DMR
 #----------------
 # Run the Individual DMR analysis
-methyl_summary <- DMR(methyl_summary, dmr_obj, 
+methyl_summary <- find_DMR(methyl_summary, dmr_obj, 
                     fixed = c('Group'), random = c('Individual'), 
-                    required_columns, reads_threshold = 5, control = 'C', 
+                    colnames_of_interest = required_column, reads_threshold = 5, control = 'C', 
                     model = 'beta-binomial', analysis_type = 'individual')
 
 #----------------------
@@ -102,7 +98,14 @@ changepoint_cols = find_changepoint_col_options(methyl_summary)
 
 # Run the changepoint_analysis function
 methyl_summary <- changepoint_analysis(methyl_summary, CG_penalty = 9, CHG_penalty = 4, 
-                              CHH_penalty = 7, z_col = 'Z_Zeb_Concentration_small')
+                              CHH_penalty = 7, z_col = changepoint_cols[1])
+
+
+#----------------------
+# DMR score rendering
+#----------------------
+
+DMR_score <- sound_score(changepoint_OF = methyl_summary, Statistic= changepoint_cols[1], Per_Change = "Treat_V_Control", other_columns=c("Control", "Estimate_GroupT_small"))
 
 
 
