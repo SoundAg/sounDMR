@@ -14,7 +14,7 @@ in the Z score of interest from the random effects model.
 
 
 ## Files
-*Optimized_DMR_Workflow.R*
+*DMR_analysis_workflow*
 
 This file contains the actual workflow for the optimized DMR analysis pipeline. 
 It can be used either as a reference for analysis or as the script for analysis
