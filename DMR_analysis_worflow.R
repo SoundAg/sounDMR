@@ -1,7 +1,6 @@
 
 library(sounDMR2)
 
-
 #-----------------------------------------------------Part 1 : ONT data clean up and standardization---------------------------------------------------------------------------------
 
 #-------------------------------
@@ -24,19 +23,15 @@ All_methyl_beds <- list.files(path=".",pattern="*_methyl.bed")
 #-------------------------
 # Create Megaframe
 #-------------------------
-Megalist <- generate_megaframe(methyl_bed_list=All_methyl_beds, Sample_count = 0, Methyl_call_type="DSP",  File_prefix="Sample")
+Megaframe <- generate_megaframe(methyl_bed_list=All_methyl_beds, Sample_count = 0, Methyl_call_type="DSP",  File_prefix="Sample")
 
-Megaframe <- Megalist[[1]]
-experimental_design_df <- Megalist[[2]]
 
-#P.S The experimental_design starter doesn't have any information with respect to treatments, rounds etc. 
+#P.S The above function creates The experimental_design starter doesn't have any information with respect to treatments, rounds etc. 
 #Make sure to add it for DMR analysis
 
 
-
-
 #-------------------------
-# Read In Methyl.bed Files
+# Create Zoomframe
 #-------------------------
 Zoomframe <- generate_zoomframe(gene_cord_df = Geneco, MFrame = Megaframe, Gene_col="Gene_name", filter_NAs=2, target_info=TRUE, gene_list = Geneco$Gene_name, File_prefix="Sample")
 

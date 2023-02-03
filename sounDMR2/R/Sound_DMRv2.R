@@ -1040,7 +1040,9 @@ get_standard_methyl_bed <-function(Methyl_bed="Methyl.bed", Sample_ID = "S1", Me
 #' @import stringr
 #' @examples
 #' # Basic usage for methyl_call_type
-#' > generate_megaframe(Methyl_call_type="DSP") OR  get_standard_methyl_bed(Methyl_call_type="Megalodon") OR get_standard_methyl_bed(Methyl_call_type="Bonito")
+#' > generate_megaframe(Methyl_call_type="DSP") OR  
+#' > get_standard_methyl_bed(Methyl_call_type="Megalodon") OR 
+#' > get_standard_methyl_bed(Methyl_call_type="Bonito")
 #' @export
 
 
@@ -1100,7 +1102,7 @@ generate_megaframe <- function(methyl_bed_list="All_methyl_beds", Sample_count =
   }
   write.table(experimental_design_df, paste(File_prefix, "Experimental_design_starter.csv",sep="_"), row.names=F, col.names = c("ID","Bedfile"), sep=",")
 
-  cat("The experimental design file is now available in current directory!\n")
+  cat("The experimental design file is now available in current directory! \n")
 
   #merge the methyl beds from diff samples into a signle large data frame
   combined_methyl_beds <-Reduce(function(x, y) merge(x, y, by=c("Chromosome", "Position"), all=TRUE), c(mylist) )
@@ -1127,9 +1129,9 @@ generate_megaframe <- function(methyl_bed_list="All_methyl_beds", Sample_count =
 
   write.table(Megaframe, paste(File_prefix, "MegaFrame.csv",sep="_"), row.names=F, sep=",")
 
-  cat("Megaframe is now available in current directory and in the R-env!")
+  cat("Megaframe is now available in current directory and in the R-env! \n")
 
-  colnames(experimental_design_df) = c("ID","Library")
+  
 
   #QC : Filter rows/sample with missing data
   rowSums(is.na(Megaframe))->Megaframe$NAs
@@ -1137,15 +1139,13 @@ generate_megaframe <- function(methyl_bed_list="All_methyl_beds", Sample_count =
 
   cat("QC: The plot provides information about missing data that can be filtered out in the next step by using the filter_NAs parameter \n")
   QCplot <- suppressMessages(ggplot(Megaframe, aes(x=NAs/3))+geom_histogram(bins=30) +
-                               labs(title = "Missing data per sample") +
-                               xlab("Sample") +
-                               ylab("Number of rows with missing data"))
+                               labs(title = "Missing data per cytosine") +
+                               xlab("Individual") +
+                               ylab("Count of rows with missing data"))
 
   print(QCplot)
 
-  Megaframe_list <- list(Megaframe,experimental_design_df)
-
-  return (Megaframe_list)
+  return (Megaframe)
 }
 
 

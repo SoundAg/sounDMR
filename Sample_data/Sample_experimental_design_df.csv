@@ -1,4 +1,4 @@
-ID,Library,Plant,Treatment,Group,Zeb_Concentration
+ID,Library,Individual,Treatment,Group,Zeb_Concentration
 S1,ZEB_EXP_3_Pool3_R1.barcode06,Zeb100_8,Zeb100,T,100
 S2,ZEB_EXP_3_Pool4_R1.barcode07,Water_8,Water,C,0
 S3,ZEB_EXP_3_POOL6_R2.barcode12,Zeb_100_2,Zeb100,T,100
