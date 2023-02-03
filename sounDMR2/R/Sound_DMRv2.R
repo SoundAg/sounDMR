@@ -61,15 +61,16 @@ create_gene_percent_x <- function(LongPercent, x = 'Chromosome',
 #' @export
 
 create_dmr_obj <- function(ZoomFrame = dataframe,
-                       experimental_design_df = dataframe,
-                       colnames_of_interest = c('Chromosome', 'Gene', 'Position',
-                                               'Strand', 'CX', 'Zeroth_pos',
-                                               'Individual')) {
+                       experimental_design_df = dataframe) {
   # Clean the data
   print('Step 1: removing rows that contain 0 methylation')
   Inputpers <- dplyr::select(ZoomFrame, starts_with("Per"))
   Inputpers$MeanMeth <- rowMeans(Inputpers, na.rm=TRUE)
   ZoomFrame_filtered <- ZoomFrame[Inputpers$MeanMeth != 0,]
+
+  # Important columns
+  colnames_of_interest <- c('Chromosome', 'Gene', 'Position', 'Strand', 'CX',
+                            'Zeroth_pos', 'Plant')
 
   #QC Make sure the correct columns are present
   print('Step 2: checking for missing columns in experimental id')
@@ -290,10 +291,14 @@ create_cols_for_individuals <- function(Exp_ID_Treated,
 #' @param dmr_obj the dmr object containing the experimental design and raw data
 #'
 #' @export
-create_methyl_summary <- function(dmr_obj, GenePercentPlant,
-                                GeneDepthPlant, GenePercentGroup,
-                                control = 'C', colnames_of_interest) {
-  
+create_methyl_summary <- function(dmr_obj, control = 'C', colnames_of_interest) {
+  colnames_of_interest <- c('Chromosome', 'Gene', 'Position', 'Strand', 'CX',
+                            'Zeroth_pos', 'Plant')
+  # Create the summary files
+  GeneDepthPlant <- dcast(dmr_obj$LongMeth,Gene*Zeroth_pos~Plant,mean,
+                          value.var = "total_RD", na.rm=TRUE)
+  GenePercentGroup <- create_gene_percent_x(dmr_obj$LongPercent, 'Group', mean)
+  GenePercentPlant <- create_gene_percent_x(dmr_obj$LongPercent, 'Plant', mean)
   # QC
   # Make sure the GenePercentX dfs are the same length as the Zoomframe_filtered
   # and in the same order
@@ -301,8 +306,7 @@ create_methyl_summary <- function(dmr_obj, GenePercentPlant,
       sum(GenePercentPlant$Gene == dmr_obj$ZoomFrame_filtered$Gene) != nrow(dmr_obj$ZoomFrame_filtered)) {
     print('Output is in a different order. Try running again.')
   }
-  
-  
+
   # Create experimental_design_df_treated
   experimental_design_df_treated <- dmr_obj$experimental_design_df[dmr_obj$experimental_design_df$Group != control,]
 
@@ -318,9 +322,9 @@ create_methyl_summary <- function(dmr_obj, GenePercentPlant,
   # QC
   # Checking Output_Frame created the three new cols for each individual
   if (ncol(Output_Frame) == (length(colnames_of_interest) - 1) + 3 * length(unique(experimental_design_df_treated$Plant))) {
-    print('Number of columns in Output_Frame is correct')
+    print('Number of columns in methyl_summary is correct')
   } else {
-    print('The number of columns in Output_Frame is incorrect. Double check there are no duplicates')
+    print('The number of columns in methyl_summary is incorrect. Double check there are no duplicates')
     print(paste('Expected:', (length(colnames_of_interest) - 1) + 3 * length(unique(experimental_design_df_treated$Plant)),
                 'Found:', ncol(Output_Frame)))
   }
@@ -636,7 +640,7 @@ individual_DMR <- function(Output_Frame, ZoomFrame_filtered, experimental_design
   # Obtain the formula
   formula <- create_formula(fixed, random)
   print(formula)
-  
+
   Exp_ID_Treated <- experimental_design_df[experimental_design_df$Group == 'T',]
 
   # Create a progress bar
@@ -689,8 +693,11 @@ individual_DMR <- function(Output_Frame, ZoomFrame_filtered, experimental_design
 #' @export
 
 find_DMR <- function(Output_Frame, dmr_obj, fixed = c('Group'),
-                random = c('Plant'), colnames_of_interest, reads_threshold = 3,
+                random = c('Plant'), reads_threshold = 3,
                 model, control = '', analysis_type) {
+  # The required columns
+  colnames_of_interest <- c('Chromosome', 'Gene', 'Position', 'Strand', 'CX',
+                            'Zeroth_pos', 'Plant')
   if (tolower(analysis_type) == 'group') {
     Output_Frame = group_DMR(Output_Frame, dmr_obj$ZoomFrame_filtered,
                              dmr_obj$experimental_design_df,
@@ -1040,8 +1047,8 @@ get_standard_methyl_bed <-function(Methyl_bed="Methyl.bed", Sample_ID = "S1", Me
 #' @import stringr
 #' @examples
 #' # Basic usage for methyl_call_type
-#' > generate_megaframe(Methyl_call_type="DSP") OR  
-#' > get_standard_methyl_bed(Methyl_call_type="Megalodon") OR 
+#' > generate_megaframe(Methyl_call_type="DSP") OR
+#' > get_standard_methyl_bed(Methyl_call_type="Megalodon") OR
 #' > get_standard_methyl_bed(Methyl_call_type="Bonito")
 #' @export
 
@@ -1131,7 +1138,7 @@ generate_megaframe <- function(methyl_bed_list="All_methyl_beds", Sample_count =
 
   cat("Megaframe is now available in current directory and in the R-env! \n")
 
-  
+
 
   #QC : Filter rows/sample with missing data
   rowSums(is.na(Megaframe))->Megaframe$NAs
