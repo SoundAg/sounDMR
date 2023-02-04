@@ -988,13 +988,22 @@ sound_score <- function(changepoint_OF = dataframe, Statistic="Z_GroupT_small", 
   cp_OF <- within(changepoint_OF, cp_group <- paste(Gene,CX,changepoint_OF[[MethGroup]], sep='_'))
   #Calculate statistics and aggregate for every region
   Ag_Groups <- cp_OF %>%
-              group_by(cp_group) %>%
-              mutate(Count = n()) %>%
-              group_by(cp_group, Count) %>%
-              summarise_at(vars(one_of(keep_cols)), mean)
+    group_by(cp_group) %>%
+    mutate(Count = n()) %>%
+    group_by(cp_group, Gene,CX, Count) %>%
+    summarise_at(vars(one_of(keep_cols)), mean) 
+   
+  Ag_Pos <- cp_OF %>%
+    group_by(cp_group) %>%
+    summarise(Start=min(Zeroth_pos), Stop=max(Zeroth_pos)) 
+  
+  cbind(Ag_Pos, Ag_Groups[,-1])->Ag_Groups
+  
   #Calculate Sound Statistic
-Ag_Groups$dmr_score<-(((Ag_Groups$Count)^(1/3))*(abs(Ag_Groups[[MethRegion_Z]])*abs(Ag_Groups[[Per_Change]]))^(1/2))
-return(Ag_Groups)
+  Ag_Groups$dmr_score<-(((Ag_Groups$Count)^(1/3))*(abs(Ag_Groups[[MethRegion_Z]])*abs(Ag_Groups[[Per_Change]]))^(1/2))
+  list(Ag_Groups, cp_OF)->SS_Obj
+  names(SS_Obj) <- c("region_summary", "methyl_summary")
+  return(SS_Obj)
 }
 
 
