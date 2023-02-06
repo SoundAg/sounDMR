@@ -1001,10 +1001,18 @@ sound_score <- function(changepoint_OF = dataframe, Statistic="Z_GroupT_small", 
   
   #Calculate Sound Statistic
   Ag_Groups$dmr_score<-(((Ag_Groups$Count)^(1/3))*(abs(Ag_Groups[[MethRegion_Z]])*abs(Ag_Groups[[Per_Change]]))^(1/2))
+  
+  for(i in 1:nrow(Ag_Groups)){
+    if(Ag_Groups[[Per_Change]][i]<0){
+      Ag_Groups$dmr_score[i]<-Ag_Groups$dmr_score[i]*-1
+      
+    }
+  }
   list(Ag_Groups, cp_OF)->SS_Obj
   names(SS_Obj) <- c("region_summary", "methyl_summary")
   return(SS_Obj)
 }
+
 
 
 #' get_standard_methyl_bed
