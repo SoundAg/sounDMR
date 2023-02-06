@@ -970,12 +970,13 @@ changepoint_analysis <- function(whole_df,
 #' @description
 #' Takes in an Output_Frame that has been broken in to changepoint regions based on a specific test statistic of interest, and creates an aggregated changepoint region file that includes summary statistics for each region, and the "sound score" a measure of the strength of a DMR within that region.
 #'
-#' @param changepoint_OF (df) - The OF file that has had changepoint calling ran on it
-#' @param Statistic (str) - Name of the test statistic that changepoint was run on
+#' @param changepoint_OF (df) - the OF file that has had changepoint calling ran on it
+#' @param Statistic (str) - name of the test statistic that changepoint was run on
 #' @param Per_Change (str) - Column that captures the change in methylation between two groups of interest
-#' @param other_columns (str) - Names of any other columns that one is interested in calculating region averages on.
-#' @return Aggregated_Changepoint_File (df) - File that contains information about methylation patterns within each changepoint region
+#' @param other_columns (str) - Names of any other columns that one is interested in calculating region averaqges on.
+#' @return Aggregated_Changepoint_Object (list) - File that contains information about methylation patterns within each changepoint region
 #' @export
+
 
 sound_score <- function(changepoint_OF = dataframe, Statistic="Z_GroupT_small", Per_Change = "Treat_V_Control", other_columns=c("Control", "Estimate_GroupT_small")) {
   # Determine proper column names givwen the test statistic of interest
@@ -1008,10 +1009,14 @@ sound_score <- function(changepoint_OF = dataframe, Statistic="Z_GroupT_small", 
       
     }
   }
+  
+  Ag_Groups$ds_percentile<-ecdf(Ag_Groups$dmr_score)(Ag_Groups$dmr_score)
+  
   list(Ag_Groups, cp_OF)->SS_Obj
   names(SS_Obj) <- c("region_summary", "methyl_summary")
   return(SS_Obj)
 }
+
 
 
 
