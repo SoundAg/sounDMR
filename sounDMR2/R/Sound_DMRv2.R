@@ -978,13 +978,13 @@ changepoint_analysis <- function(whole_df,
 #' @export
 
 
-sound_score <- function(changepoint_OF = dataframe, Statistic="Z_GroupT_small", Per_Change = "Treat_V_Control", other_columns=c("Control", "Estimate_GroupT_small")) {
+sound_score <- function(changepoint_OF = dataframe, Statistic="Z_GroupT_small", Per_Change = "Treat_V_Control", Control="Control", other_columns=c("Estimate_GroupT_small")) {
   # Determine proper column names givwen the test statistic of interest
   MethGroup <- paste("MethGroup_",Statistic, sep = "")
   MethRegion_Z <- paste("MethRegion_",Statistic, sep = "")
   MethRegion_Length <- paste("MethRegionLength_",Statistic, sep = "")
   # Create vector of columns that include information that the user wants aggregated across each changepoint region.  Includes Statistic, Per_Change, region length, and any other columns of interest.
-  c(MethRegion_Z, MethRegion_Length,Per_Change, other_columns )->keep_cols
+  c(MethRegion_Z, MethRegion_Length,Per_Change, Control,other_columns )->keep_cols
   # Create new dataframe that includes a new column that has a column for every unique changepoint region
   cp_OF <- within(changepoint_OF, cp_group <- paste(Gene,CX,changepoint_OF[[MethGroup]], sep='_'))
   #Calculate statistics and aggregate for every region
@@ -1003,20 +1003,23 @@ sound_score <- function(changepoint_OF = dataframe, Statistic="Z_GroupT_small", 
   #Calculate Sound Statistic
   Ag_Groups$dmr_score<-(((Ag_Groups$Count)^(1/3))*(abs(Ag_Groups[[MethRegion_Z]])*abs(Ag_Groups[[Per_Change]]))^(1/2))
   
+  Ag_Groups$dmr_score2<-(((Ag_Groups$Count)^(1/3))*(abs(Ag_Groups[[MethRegion_Z]])*abs(asin(sqrt(Ag_Groups[[Per_Change]]/100+Ag_Groups[[Control]]/100))-asin(sqrt(Ag_Groups[[Control]]/100)))^(1/2)))
+  
+  
+  
   for(i in 1:nrow(Ag_Groups)){
     if(Ag_Groups[[Per_Change]][i]<0){
       Ag_Groups$dmr_score[i]<-Ag_Groups$dmr_score[i]*-1
+      Ag_Groups$dmr_score2[i]<-Ag_Groups$dmr_score2[i]*-1
       
     }
   }
   
-  Ag_Groups$ds_percentile<-ecdf(Ag_Groups$dmr_score)(Ag_Groups$dmr_score)
   
   list(Ag_Groups, cp_OF)->SS_Obj
   names(SS_Obj) <- c("region_summary", "methyl_summary")
   return(SS_Obj)
 }
-
 
 
 
