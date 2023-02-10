@@ -1299,4 +1299,108 @@ generate_zoomframe <- function(gene_cord_df, MFrame , Gene_col="Gene_name", filt
 
   return(Final_gene_set)
 }
+                                
+                              
+#' boot_score
+#' @description
+#' Bootstrap analysis comparing target region with other regions of gewnome
+#'
+#' @param SS_Obj (list) - Aggregated Changepoint Object created from sound_score
+#' @param target_gene (str) - name of the target gene that was hit with oligos
+#' @param target_start (str) - Start position relative to gene start that was hit with oligos
+#' @param target_end (str) - Stop position relative to gene start that was hit with oligos
+#' @param nboots (str) - Number of bootstrap replicates
+#' @param nscore (str) - Name of the score column to run bootstrapping on (one of dmr_score or dmr_score2)
+#' @return Boot_Object (list) - File that contains information updated on target region info and bootstrap values
+#' @export
 
+
+boot_score<-function(SS_Obj = Score_Out, target_gene="Glyma.07G034800", target_start=-1000, target_end=0, nboots=1000, score="dmr_score"){
+  #Make necesarry objects
+  SS_Obj$region_summary->rs
+  SS_Obj$methyl_summary->ms
+  rs[rs$Gene==target_gene,]->target_rs
+  
+  #create data frame to be filled with results of bootstrapping
+  boot_out <- data.frame(matrix(ncol = 5, nrow = nboots+1))
+  
+  #provide column names
+  colnames(boot_out) <- c('Gene', 'CG_Score', 'CHG_Score', "CHH_Score", 'Target')
+  
+  #Calculate precision adjusted score
+  target_rs %>%
+    group_by(cp_group) %>%
+    mutate(distance_from_target= min(c(abs(Start-target_start), abs(Start-target_end),abs(Stop-target_start), abs(Stop-target_end))),
+           distance_from_target=ifelse(Start<=target_start & Stop >= target_end, 0, distance_from_target),
+           adjusted_soundscore= ifelse(distance_from_target>10000,0,(1-(0.0001*distance_from_target))*!!as.name(score))) -> target_rs
+  
+  
+  #Find strongest DMR around target gene
+  max(target_rs$adjusted_soundscore[target_rs$CX=="CG"])->boot_out$CG_Score[1]
+  max(target_rs$adjusted_soundscore[target_rs$CX=="CHG"])->boot_out$CHG_Score[1]
+  max(target_rs$adjusted_soundscore[target_rs$CX=="CHH"])->boot_out$CHH_Score[1]
+  
+  # Write info to boot_out file
+  1->boot_out$Target[1]
+  target_gene->boot_out$Gene[1]
+  
+  # Make non-target file
+  ms[ms$Gene!=target_gene,]->nontarget_ms
+  
+  # Create lookup table with info for each gene
+  nontarget_ms %>%
+    group_by(Gene) %>%
+    summarise(Start=min(Zeroth_pos), Stop=max(Zeroth_pos))  -> nontarget_region_lookup
+  
+  # Determine if gene is far enough from end of contig to be used for bootstrapping
+  nontarget_ms$far_enough<-FALSE
+  for(i in 1:nrow(nontarget_region_lookup)){
+    nontarget_ms$far_enough[nontarget_ms$Gene == nontarget_region_lookup$Gene[i]] <- pmin(abs(nontarget_ms$Zeroth_pos[nontarget_ms$Gene == nontarget_region_lookup$Gene[i]]-nontarget_region_lookup$Start[i]), abs(nontarget_ms$Zeroth_pos[nontarget_ms$Gene == nontarget_region_lookup$Gene[i]]-nontarget_region_lookup$Stop[i])) > 10000 
+  }
+  #subset to only include these rows
+  nontarget_ms[nontarget_ms$far_enough==TRUE,]->nontarget_ms_good_distance
+  
+  #sample from rows
+  sample_n(nontarget_ms_good_distance, nboots)->boot_positions
+  
+  #run bootstrapping
+  for(i in 1:nrow(boot_positions)){
+    rs[rs$Gene==boot_positions$Gene[i],]->boot_rs
+    boot_positions$Zeroth_pos[i]->target_start
+    boot_positions$Zeroth_pos[i]->target_end
+    boot_rs %>%
+      group_by(cp_group) %>%
+      mutate(distance_from_target= min(c(abs(Start-target_start), abs(Start-target_end),abs(Stop-target_start), abs(Stop-target_end))),
+             distance_from_target=ifelse(Start<=target_start & Stop >= target_end, 0, distance_from_target),
+             adjusted_soundscore= ifelse(distance_from_target>10000,0,(1-(0.0001*distance_from_target))*!!as.name(score))) -> boot_rs
+    
+    #Save bootstrap dmr_Scores
+    
+    max(boot_rs$adjusted_soundscore[boot_rs$CX=="CG"])->boot_out$CG_Score[i+1]
+    max(boot_rs$adjusted_soundscore[boot_rs$CX=="CHG"])->boot_out$CHG_Score[i+1]
+    max(boot_rs$adjusted_soundscore[boot_rs$CX=="CHH"])->boot_out$CHH_Score[i+1]
+    0->boot_out$Target[i+1]
+    boot_positions$Gene[i]->boot_out$Gene[i+1]
+  }
+  
+  print(paste("Precision Adjusted CG DMR score of:", round(boot_out$CG_Score,3)[1], " For a CG bootstrap p-value of: ", round(1-ecdf(boot_out$CG_Score)(boot_out$CG_Score)[1], 3)))
+  print(paste("Precision Adjusted CHG DMR score of:", round(boot_out$CHG_Score,3)[1], " For a CHG bootstrap p-value of: ", round(1-ecdf(boot_out$CHG_Score)(boot_out$CHG_Score)[1], 3)))
+  print(paste("Precision Adjusted CHH DMR score of:", round(boot_out$CHH_Score,3)[1], " For a CHH bootstrap p-value of: ", round(1-ecdf(boot_out$CHH_Score)(boot_out$CHH_Score)[1], 3)))
+  
+  print(rbind(target_rs[target_rs$adjusted_soundscore==boot_out$CG_Score[1],], target_rs[target_rs$adjusted_soundscore==boot_out$CHG_Score[1],], target_rs[target_rs$adjusted_soundscore==boot_out$CHH_Score[1],]))
+  
+  print(paste("Final Bootstrap Adjusted CG DMR Score:", round(boot_out[1,2]*((boot_out[1,2]-mean(boot_out[-1,2]))/sd(boot_out[-1,2])),2)))
+  print(paste("Final Bootstrap Adjusted CHG DMR Score:", round(boot_out[1,3]*((boot_out[1,3]-mean(boot_out[-1,3]))/sd(boot_out[-1,3])),2)))
+  print(paste("Final Bootstrap Adjusted CHH DMR Score:", round(boot_out[1,4]*((boot_out[1,4]-mean(boot_out[-1,4]))/sd(boot_out[-1,4])),2)))
+  print(paste("0-1: Nothing there"))
+  print(paste("1-2: Subtle shifts in methylation"))
+  print(paste("2-3: Moderate methylation shifts near oligo treatment"))
+  print(paste("3-5: Significant methylation shifts near oligo treatment"))
+  print(paste("5+: Very Strong evidencce of DMR associated with oligo treatment"))
+  
+  
+  list(boot_out, target_rs)->Boot_Obj
+  names(Boot_Obj) <- c("bootstrap_scores", "target_rs")
+  return(Boot_Obj)
+  
+}
