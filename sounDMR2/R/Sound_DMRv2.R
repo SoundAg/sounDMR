@@ -1316,10 +1316,10 @@ boot_score
 
 
 boot_score<-function(sound_score_obj = NA, target_gene= NA, target_start=-1000, target_end=0, nboots=1000, scoring_col_name ="dmr_score"){
-  #Make necesarry objects
-  sound_score_obj$region_summary->rs
-  sound_score_obj$methyl_summary->ms
-  rs[rs$Gene==target_gene,]->target_rs
+  #Make necessary objects
+  rs<-sound_score_obj$region_summary
+  ms<-sound_score_obj$methyl_summary
+  target_rs<-rs[rs$Gene==target_gene,]
   
   #create data frame to be filled with results of bootstrapping
   boot_out <- data.frame(matrix(ncol = 5, nrow = nboots+1))
@@ -1336,16 +1336,16 @@ boot_score<-function(sound_score_obj = NA, target_gene= NA, target_start=-1000, 
   
   
   #Find strongest DMR around target gene
-  max(target_rs$adjusted_soundscore[target_rs$CX=="CG"])->boot_out$CG_Score[1]
-  max(target_rs$adjusted_soundscore[target_rs$CX=="CHG"])->boot_out$CHG_Score[1]
-  max(target_rs$adjusted_soundscore[target_rs$CX=="CHH"])->boot_out$CHH_Score[1]
+  boot_out$CG_Score[1]<-max(target_rs$adjusted_soundscore[target_rs$CX=="CG"])
+  boot_out$CHG_Score[1]<-max(target_rs$adjusted_soundscore[target_rs$CX=="CHG"])
+  boot_out$CHH_Score[1]<-max(target_rs$adjusted_soundscore[target_rs$CX=="CHH"])
   
   # Write info to Boot_Object
-  1->boot_out$Target[1]
-  target_gene->boot_out$Gene[1]
+  boot_out$Target[1]<- 1
+  boot_out$Gene[1]<-target_gene
   
   # Make non-target frame
-  ms[ms$Gene!=target_gene,]->nontarget_ms
+  nontarget_ms<-ms[ms$Gene!=target_gene,]
   
   # Create lookup table with info for each gene
   nontarget_ms %>%
@@ -1358,10 +1358,10 @@ boot_score<-function(sound_score_obj = NA, target_gene= NA, target_start=-1000, 
     nontarget_ms$far_enough[nontarget_ms$Gene == nontarget_region_lookup$Gene[i]] <- pmin(abs(nontarget_ms$Zeroth_pos[nontarget_ms$Gene == nontarget_region_lookup$Gene[i]]-nontarget_region_lookup$Start[i]), abs(nontarget_ms$Zeroth_pos[nontarget_ms$Gene == nontarget_region_lookup$Gene[i]]-nontarget_region_lookup$Stop[i])) > 10000 
   }
   #subset to only include these rows
-  nontarget_ms[nontarget_ms$far_enough==TRUE,]->nontarget_ms_good_distance
+  nontarget_ms_good_distance<-nontarget_ms[nontarget_ms$far_enough==TRUE,]
   
   # sample from rows
-  sample_n(nontarget_ms_good_distance, nboots, replace=TRUE)->boot_positions
+  boot_positions<-sample_n(nontarget_ms_good_distance, nboots, replace=TRUE)
   
   # run bootstrapping
   for(i in 1:nrow(boot_positions)){
@@ -1376,11 +1376,11 @@ boot_score<-function(sound_score_obj = NA, target_gene= NA, target_start=-1000, 
     
     # Write info to Boot_Object
     
-    max(boot_rs$adjusted_soundscore[boot_rs$CX=="CG"])->boot_out$CG_Score[i+1]
-    max(boot_rs$adjusted_soundscore[boot_rs$CX=="CHG"])->boot_out$CHG_Score[i+1]
-    max(boot_rs$adjusted_soundscore[boot_rs$CX=="CHH"])->boot_out$CHH_Score[i+1]
-    0->boot_out$Target[i+1]
-    boot_positions$Gene[i]->boot_out$Gene[i+1]
+    boot_out$CG_Score[i+1]<-max(boot_rs$adjusted_soundscore[boot_rs$CX=="CG"])
+    boot_out$CHG_Score[i+1]<-max(boot_rs$adjusted_soundscore[boot_rs$CX=="CHG"])
+    boot_out$CHH_Score[i+1]<-max(boot_rs$adjusted_soundscore[boot_rs$CX=="CHH"])
+    boot_out$Target[i+1]<-0
+    boot_out$Gene[i+1]<-boot_positions$Gene[i]
   }
   
   print(paste("Precision Adjusted CG DMR score of:", round(boot_out$CG_Score,3)[1], " For a CG bootstrap p-value of: ", round(1-ecdf(boot_out$CG_Score)(boot_out$CG_Score)[1], 3)))
