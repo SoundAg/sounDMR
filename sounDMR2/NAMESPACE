@@ -2,6 +2,7 @@
 
 export(add_changepoint_info)
 export(add_zoom_coords)
+export(boot_score)
 export(changepoint_analysis)
 export(create_cols_for_individuals)
 export(create_dmr_obj)

@@ -1301,7 +1301,7 @@ generate_zoomframe <- function(gene_cord_df, MFrame , Gene_col="Gene_name", filt
 }
                                 
                               
-boot_score
+#' Boot_score
 #' @description
 #' Bootstrap analysis comparing target region with other regions of genome
 #'
