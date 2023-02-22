@@ -70,6 +70,6 @@ library(sounDMR)
 ```
 
 ## Data availability
-Sample data is available on the [github](https://github.com/SoundAg/sounDMR) page which includes methyl bed files for 2 treated and control individuals each along with Experimental-ID file and Gene-corodinates file for the ZoomFrame.
+Sample data is available on the [github](https://github.com/SoundAg/sounDMR) page which includes methyl bed files for 2 treated and control individuals each along with Experimental design file and Gene coordinates file for the ZoomFrame.
 
 
