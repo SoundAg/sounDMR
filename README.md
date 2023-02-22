@@ -6,6 +6,12 @@ There are a number of steps in our differential methylation pipeline that run th
 ## Pre-requisites
 We need to run Megalodon/Deep-Signal Plant/Bonito to calculate methylation levels at each cytosine for each individual. This package technically works with any ONT bed file with a format as mentioned in [here](https://www.encodeproject.org/data-standards/wgbs/), in the **Description of bedMethyl file section**. If focussing on a small part fo the genome, these bed files must be subset using bedtools intersect to focus on specific regions of the genome.
 
+``` 
+bedtools intersect -a [ONT_methyl.bed] -b [target_regions.bed] -wa > [ONT_methyl_subset.bed]
+
+More information on bedtools intersect can be found [here](https://bedtools.readthedocs.io/en/latest/content/tools/intersect.html).
+```
+
 ## Installation
 Make sure you have access to the latest version of the package and go through the installation steps below. This can be done either by downloading the tar file from our [github](https://github.com/SoundAg/DMR_analysis) page or by cloning it in your local environment.
 This only needs to be done once.
