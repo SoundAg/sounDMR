@@ -93,3 +93,6 @@ DMR_score <- sound_score(changepoint_OF = methyl_summary,
                          Statistic = changepoint_cols[1], 
                          Per_Change = "Treat_V_Control", 
                          other_columns=c("Control", "Estimate_GroupT_small"))
+
+
+boot_score(sound_score_obj = DMR_score, target_gene = "AT1G01640", scoring_col_name="dmr_score2")

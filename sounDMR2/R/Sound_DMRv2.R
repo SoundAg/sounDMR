@@ -1199,11 +1199,11 @@ generate_megaframe <- function(methyl_bed_list="All_methyl_beds", Sample_count =
 #' @import stringr
 #' @export
 
-add_zoom_coords <- function(target, geneco_index, gcoord_exist=TRUE, Gene_col="Gene_name") {
+add_zoom_coords <- function(target, gene_cord_df, geneco_index, gcoord_exist=TRUE, Gene_col="Gene_name") {
 
   if(gcoord_exist==TRUE){
     for (i in 1:nrow(target)) {
-      if (Geneco[[Gene_col]][geneco_index]==target$Gene[i]){
+      if (gene_cord_df[[Gene_col]][geneco_index]==target$Gene[i]){
         if((target$Position[i]>=Geneco$Low[geneco_index]) & (target$Position[i]<=Geneco$High[geneco_index]) ) {
           target$Zoom_co[i] <- 1 #Gene body region
 
@@ -1243,7 +1243,7 @@ add_zoom_coords <- function(target, geneco_index, gcoord_exist=TRUE, Gene_col="G
 #' @import stringr
 #' @export
 
-generate_zoomframe <- function(gene_cord_df, MFrame , Gene_col="Gene_name", filter_NAs=0, target_info=TRUE, gene_list = Geneco$Gene_name, File_prefix="") {
+generate_zoomframe <- function(gene_cord_df, MFrame, Gene_col="Gene_name", filter_NAs=0, target_info=TRUE, gene_list = Geneco$Gene_name, File_prefix="") {
 
   #set the filter based on how stringent it needs to be based on the plot
   MFrame[MFrame$NAs<(filter_NAs*3),]->MFrame
@@ -1264,7 +1264,7 @@ generate_zoomframe <- function(gene_cord_df, MFrame , Gene_col="Gene_name", filt
           Gene_subset$Zeroth_pos <-  (gene_cord_df$High[i]- Gene_subset$Position) #reorienting the anti-sense genes
         }
         #Call the add_zoom_coords function to add Zoom_co-ordinates
-        Target_df <- add_zoom_coords(target=Gene_subset,geneco_index=i, gcoord_exist=TRUE, Gene_col="Gene_name")
+        Target_df <- add_zoom_coords(target=Gene_subset, gene_cord_df=gene_cord_df, geneco_index=i, gcoord_exist=TRUE, Gene_col=Gene_col)
         Final_gene_set <- rbind(Final_gene_set,Target_df) #append it to a Final dataframe
       }
     }
