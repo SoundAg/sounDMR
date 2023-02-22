@@ -9,7 +9,7 @@ We need to run Megalodon/Deep-Signal Plant/Bonito to calculate methylation level
 ``` 
 bedtools intersect -a [ONT_methyl.bed] -b [target_regions.bed] -wa > [ONT_methyl_subset.bed]
 ```
-More information on bedtools intersect can be found [here](https://bedtools.readthedocs.io/en/latest/content/tools/intersect.html).```
+More information on bedtools intersect can be found [here](https://bedtools.readthedocs.io/en/latest/content/tools/intersect.html).
 
 
 ## Installation
