@@ -1383,15 +1383,19 @@ boot_score<-function(sound_score_obj = NA, target_gene= NA, target_start=-1000, 
     boot_out$Gene[i+1]<-boot_positions$Gene[i]
   }
   
-  print(paste("Precision Adjusted CG DMR score of:", round(boot_out$CG_Score,3)[1], " For a CG bootstrap p-value of: ", round(1-ecdf(boot_out$CG_Score)(boot_out$CG_Score)[1], 3)))
-  print(paste("Precision Adjusted CHG DMR score of:", round(boot_out$CHG_Score,3)[1], " For a CHG bootstrap p-value of: ", round(1-ecdf(boot_out$CHG_Score)(boot_out$CHG_Score)[1], 3)))
-  print(paste("Precision Adjusted CHH DMR score of:", round(boot_out$CHH_Score,3)[1], " For a CHH bootstrap p-value of: ", round(1-ecdf(boot_out$CHH_Score)(boot_out$CHH_Score)[1], 3)))
+  boot_out[!duplicated(boot_out[c(1,2)]),]->bo_CG
+  boot_out[!duplicated(boot_out[c(1,3)]),]->bo_CHG
+  boot_out[!duplicated(boot_out[c(1,4)]),]->bo_CHH
+  
+  print(paste("Precision Adjusted CG DMR score of:", round(boot_out$CG_Score,3)[1], " For a CG bootstrap p-value of: ", 1-as.numeric(rownames(bo_CG[bo_CG$Target==1,]))/nrow(bo_CG)))
+  print(paste("Precision Adjusted CHG DMR score of:", round(boot_out$CHG_Score,3)[1], " For a CHG bootstrap p-value of: ", 1-as.numeric(rownames(bo_CG[bo_CHG$Target==1,]))/nrow(bo_CHG)))
+  print(paste("Precision Adjusted CHH DMR score of:", round(boot_out$CHH_Score,3)[1], " For a CHH bootstrap p-value of: ", 1-as.numeric(rownames(bo_CG[bo_CHH$Target==1,]))/nrow(bo_CHH)))
   
   print(rbind(target_rs[target_rs$adjusted_soundscore==boot_out$CG_Score[1],], target_rs[target_rs$adjusted_soundscore==boot_out$CHG_Score[1],], target_rs[target_rs$adjusted_soundscore==boot_out$CHH_Score[1],]))
   
-  print(paste("Final Bootstrap Adjusted CG DMR Score:", round(boot_out[1,2]*((boot_out[1,2]-mean(boot_out[-1,2]))/sd(boot_out[-1,2])),2)))
-  print(paste("Final Bootstrap Adjusted CHG DMR Score:", round(boot_out[1,3]*((boot_out[1,3]-mean(boot_out[-1,3]))/sd(boot_out[-1,3])),2)))
-  print(paste("Final Bootstrap Adjusted CHH DMR Score:", round(boot_out[1,4]*((boot_out[1,4]-mean(boot_out[-1,4]))/sd(boot_out[-1,4])),2)))
+  print(paste("Final Bootstrap Adjusted CG DMR Score:", round(bo_CG[1,2]*((bo_CG[1,2]-mean(bo_CG[-1,2]))/sd(bo_CG[,2])),2)))
+  print(paste("Final Bootstrap Adjusted CHG DMR Score:", round(bo_CHG[1,3]*((bo_CHG[1,3]-mean(bo_CHG[-1,3]))/sd(bo_CHG[,3])),2)))
+  print(paste("Final Bootstrap Adjusted CHH DMR Score:", round(bo_CHH[1,4]*((bo_CHH[1,4]-mean(bo_CHH[-1,4]))/sd(bo_CHH[,4])),2)))
   print(paste("0-1: Nothing there"))
   print(paste("1-2: Subtle shifts in methylation"))
   print(paste("2-3: Moderate methylation shifts near oligo treatment"))
