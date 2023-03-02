@@ -1387,6 +1387,10 @@ boot_score<-function(sound_score_obj = NA, target_gene= NA, target_start=-1000, 
   boot_out[!duplicated(boot_out[c(1,3)]),]->bo_CHG
   boot_out[!duplicated(boot_out[c(1,4)]),]->bo_CHH
   
+  bo_CG[order(-bo_CG$CG_Score),]->bo_CG
+  bo_CHG[order(-bo_CHG$CHG_Score),]->bo_CHG
+  bo_CHH[order(-bo_CHH$CHH_Score),]->bo_CHH
+  
   print(paste("Precision Adjusted CG DMR score of:", round(boot_out$CG_Score,3)[1], " For a CG bootstrap p-value of: ", 1-as.numeric(rownames(bo_CG[bo_CG$Target==1,]))/nrow(bo_CG)))
   print(paste("Precision Adjusted CHG DMR score of:", round(boot_out$CHG_Score,3)[1], " For a CHG bootstrap p-value of: ", 1-as.numeric(rownames(bo_CG[bo_CHG$Target==1,]))/nrow(bo_CHG)))
   print(paste("Precision Adjusted CHH DMR score of:", round(boot_out$CHH_Score,3)[1], " For a CHH bootstrap p-value of: ", 1-as.numeric(rownames(bo_CG[bo_CHH$Target==1,]))/nrow(bo_CHH)))
