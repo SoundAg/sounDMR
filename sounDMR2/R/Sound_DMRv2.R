@@ -1256,6 +1256,7 @@ generate_zoomframe <- function(gene_cord_df, MFrame, Gene_col="Gene_name", filte
     if( any(gene_cord_df$Chromosome[i]==MFrame$Chromosome) ){ #make sure the chromosomes match between Mframe and gene_cord_df
       if ( max(MFrame$Position)>=gene_cord_df$Adapt_Low[i] && (min(MFrame$Position)<=gene_cord_df$Adapt_High[i]) ) {
         Gene_subset <- MFrame[MFrame$Chromosome %in% gene_cord_df$Chromosome[i], ] #subset based on the gene
+        Gene_subset <- Gene_subset %>% filter(Position >= (gene_cord_df$Adapt_Low[i]) & Position <=(gene_cord_df$Adapt_High[i]) )
         Gene_subset$Gene <- gene_cord_df[[Gene_col]][i] #Add-in the gene/geneID names
         if (gene_cord_df$Strand[i]=="+") {
           Gene_subset$Zeroth_pos <- (Gene_subset$Position - gene_cord_df$Low[i]) #Computing the Zeroth position to center everything around ATG.
@@ -1395,7 +1396,7 @@ boot_score<-function(sound_score_obj = NA, target_gene= NA, target_start=-1000, 
   bo_CHG_order$rank<-c(seq(1, nrow(bo_CHG_order), by=1))
   bo_CHH_order$rank<-c(seq(1, nrow(bo_CHH_order), by=1))
   
-  print(paste("Precision Adjusted CG DMR score of:", round(boot_out$CG_Score,3)[1], " For a CG bootstrap p-value of: ", (bo_CG_order[bo_CG_order$Target==1,]$rank/nrow(bo_CG_order)))
+  print(paste("Precision Adjusted CG DMR score of:", round(boot_out$CG_Score,3)[1], " For a CG bootstrap p-value of: ", (bo_CG_order[bo_CG_order$Target==1,]$rank)/nrow(bo_CG_order)))
   print(paste("Precision Adjusted CHG DMR score of:", round(boot_out$CHG_Score,3)[1], " For a CHG bootstrap p-value of: ", (bo_CHG_order[bo_CHG_order$Target==1,]$rank)/nrow(bo_CHG_order)))
   print(paste("Precision Adjusted CHH DMR score of:", round(boot_out$CHH_Score,3)[1], " For a CHH bootstrap p-value of: ", (bo_CHH_order[bo_CHH_order$Target==1,]$rank)/nrow(bo_CHH_order)))
   
