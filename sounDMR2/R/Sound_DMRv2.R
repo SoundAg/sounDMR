@@ -1332,7 +1332,7 @@ boot_score<-function(sound_score_obj = NA, target_gene= NA, target_start=-1000, 
   target_rs %>%
     group_by(cp_group) %>%
     mutate(distance_from_target= min(c(abs(Start-target_start), abs(Start-target_end),abs(Stop-target_start), abs(Stop-target_end))),
-           distance_from_target=ifelse(Start<=target_start & Stop >= target_end, 0, distance_from_target),
+           distance_from_target=ifelse(Start<=target_start & Stop >= target_end | Start>=target_start & Stop <= target_end , 0, distance_from_target),
            adjusted_soundscore= ifelse(distance_from_target>10000,0,(1-(0.0001*distance_from_target))*!!as.name(scoring_col_name))) -> target_rs
   
   
@@ -1372,7 +1372,7 @@ boot_score<-function(sound_score_obj = NA, target_gene= NA, target_start=-1000, 
     boot_rs %>%
       group_by(cp_group) %>%
       mutate(distance_from_target= min(c(abs(Start-target_start), abs(Start-target_end),abs(Stop-target_start), abs(Stop-target_end))),
-             distance_from_target=ifelse(Start<=target_start & Stop >= target_end, 0, distance_from_target),
+             distance_from_target=ifelse(Start<=target_start & Stop >= target_end | Start>=target_start & Stop <= target_end , 0, distance_from_target),
              adjusted_soundscore= ifelse(distance_from_target>10000,0,(1-(0.0001*distance_from_target))*!!as.name(scoring_col_name ))) -> boot_rs
     
     # Write info to Boot_Object
