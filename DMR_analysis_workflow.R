@@ -80,10 +80,15 @@ methyl_summary <- find_DMR(methyl_summary, dmr_obj, fixed = c('Group'),
 # Get the potential column names to run changepoint analysis on
 changepoint_cols = find_changepoint_col_options(methyl_summary)
 
+# The target genes of interest
+target_genes <- c()
+
 # Run the changepoint_analysis function
 methyl_summary <- changepoint_analysis(methyl_summary, CG_penalty = 9, 
                                        CHG_penalty = 4, CHH_penalty = 7, 
-                                       z_col = changepoint_cols[1])
+                                       target_genes = target_genes,
+                                       save_plots = T,
+                                       z_col = "Z_GroupT_small")
 
 #----------------------
 # DMR score rendering
