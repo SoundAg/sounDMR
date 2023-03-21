@@ -338,6 +338,24 @@ create_methyl_summary <- function(dmr_obj, control = 'C', colnames_of_interest) 
 }
 
 
+#' Subset Methyl Summary
+#'
+#' A function to subset the methyl_summary file to only include individuals of
+#' interest in the analysis
+#'
+#' @param methyl_summary (df) - the input data
+#' @param individuals_to_keep (list of strings) - the individuals to keep for
+#' analysis
+#' @return methyl_summary_subset (df) - the data only including the individuals
+#' for analysis
+#'
+#' @export
+subset_methyl_summary <- function(methyl_summary, individuals_to_keep) {
+  methyl_summary_subset <- methyl_summary %>%
+    select(Chromosome, Gene, Position, Strand, CX, Zeroth_pos, contains(individuals_to_keep))
+  return(methyl_summary_subset)
+}
+
 #' Create Fixed Effects
 #'
 #' A function to create the string combining fixed effects that will be passed
