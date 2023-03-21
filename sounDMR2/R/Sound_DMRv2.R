@@ -864,7 +864,7 @@ plot_changepoints <- function(data, changepoint_obj, gene_name, penalty_val,
     segment_data = data.frame(matrix(nrow = 0, ncol = 4))
     colnames(segment_data) = c('x', 'xend', 'y', 'yend')
     for (i in 1:length(changepoint_obj@cpts)) {
-      group_data = data[data[[paste0('MethGroup_', z_col)]] == i, 'Position']
+      group_data = data[data[[paste0('MethGroup_', z_col)]] == i, 'Zeroth_pos']
       segment_data[i, 'x'] = min(group_data)
       segment_data[i, 'xend'] = max(group_data)
       segment_data[i, 'y'] = changepoint_obj@param.est$mean[i]
@@ -873,8 +873,8 @@ plot_changepoints <- function(data, changepoint_obj, gene_name, penalty_val,
 
     # Create basic plot
     plot <- data %>%
-      ggplot(aes(x = Position, y = !!sym(z_col))) +
-      geom_line(size = 0.5) +
+      ggplot(aes(x = Zeroth_pos, y = !!sym(z_col))) +
+      geom_line(linewidth = 0.5) +
       theme(panel.background = element_blank(), axis.line = element_line()) +
       labs(title = paste('Changepoints for', cyt_context, gene_name, '; penalty',
                          penalty_val)) +
@@ -920,7 +920,7 @@ changepoint_analysis <- function(whole_df,
                                  save_plots = FALSE,
                                  z_col = 'column') {
   everything <- tibble::as_tibble(matrix(ncol = 8))
-  colnames(everything) = c('index', 'CX', 'Position', 'Gene', paste0('MeanMeth_',z_col),
+  colnames(everything) = c('index', 'CX', 'Zeroth_pos', 'Gene', paste0('MeanMeth_',z_col),
                            paste0('MeanMethRegion_',z_col), paste0('MethRegionLength_',z_col),
                            paste('MethylGroup',z_col))
   #  remove the first row
