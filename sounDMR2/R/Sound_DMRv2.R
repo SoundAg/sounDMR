@@ -352,7 +352,8 @@ create_methyl_summary <- function(dmr_obj, control = 'C', colnames_of_interest) 
 #' @export
 subset_methyl_summary <- function(methyl_summary, individuals_to_keep) {
   methyl_summary_subset <- methyl_summary %>%
-    select(Chromosome, Gene, Position, Strand, CX, Zeroth_pos, contains(individuals_to_keep))
+    select(Chromosome, Gene, Position, Strand, CX, Zeroth_pos,
+           contains(individuals_to_keep), Treat_V_Control, Control)
   return(methyl_summary_subset)
 }
 
