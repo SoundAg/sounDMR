@@ -56,8 +56,8 @@ methyl_summary <- create_methyl_summary(dmr_obj, control = 'C')
 
 # Option to subset methyl_summary
 indiduals_of_interest = c()
-methyl_summary_subset <- subset_methyl_summary(methyl_summary, 
-                                               individuals_to_keep = individuals_of_interest)
+methyl_summary <- subset_methyl_summary(methyl_summary, 
+                                        individuals_to_keep = individuals_of_interest)
 
 #--------------------
 # Group DMR Analysis
