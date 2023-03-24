@@ -54,6 +54,10 @@ dmr_obj <- create_dmr_obj(Zoomframe, experimental_design_df)
 
 methyl_summary <- create_methyl_summary(dmr_obj, control = 'C')
 
+# Option to subset methyl_summary
+indiduals_of_interest = c()
+methyl_summary <- subset_methyl_summary(methyl_summary, 
+                                        individuals_to_keep = individuals_of_interest)
 
 #--------------------
 # Group DMR Analysis
@@ -80,10 +84,15 @@ methyl_summary <- find_DMR(methyl_summary, dmr_obj, fixed = c('Group'),
 # Get the potential column names to run changepoint analysis on
 changepoint_cols = find_changepoint_col_options(methyl_summary)
 
+# The target genes of interest
+target_genes <- c()
+
 # Run the changepoint_analysis function
 methyl_summary <- changepoint_analysis(methyl_summary, CG_penalty = 9, 
                                        CHG_penalty = 4, CHH_penalty = 7, 
-                                       z_col = changepoint_cols[1])
+                                       target_genes = target_genes,
+                                       save_plots = F,
+                                       z_col = "Z_GroupT_small")
 
 #----------------------
 # DMR score rendering
