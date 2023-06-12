@@ -17,7 +17,7 @@ Geneco <- read.table(file.choose(), header=TRUE, sep=",")
 #-------------------------
 #The below command works only if all the bed files that you want to work with are in the working directory.
 #Make sure to change the pattern based on your methyl bed file
-All_methyl_beds <- list.files(path=".",pattern="*_methyl.bed")
+All_methyl_beds <- list.files(path=".",pattern="*.bed")
 
 
 #-------------------------
@@ -35,7 +35,7 @@ Megaframe <- generate_megaframe(methyl_bed_list=All_methyl_beds, Sample_count = 
 # Create Zoomframe
 #-------------------------
 Zoomframe <- generate_zoomframe(gene_cord_df = Geneco, MFrame = Megaframe, 
-                                Gene_col="Gene_name", filter_NAs=2, 
+                                Gene_col="Gene_name", filter_NAs=10, 
                                 target_info=TRUE, gene_list = Geneco$Gene_name, 
                                 File_prefix="Sample")
 
@@ -46,6 +46,7 @@ Zoomframe <- generate_zoomframe(gene_cord_df = Geneco, MFrame = Megaframe,
 # Clean Data
 #------------
 
+experimental_design_df <- read.table(file.choose(), header=TRUE, sep=",")
 dmr_obj <- create_dmr_obj(Zoomframe, experimental_design_df)
 
 #-----------------------------------------------
@@ -55,7 +56,7 @@ dmr_obj <- create_dmr_obj(Zoomframe, experimental_design_df)
 methyl_summary <- create_methyl_summary(dmr_obj, control = 'C')
 
 # Option to subset methyl_summary
-indiduals_of_interest = c()
+individuals_of_interest = unique(dmr_obj$experimental_design_df$Individual)
 methyl_summary <- subset_methyl_summary(methyl_summary, 
                                         individuals_to_keep = individuals_of_interest)
 
@@ -65,7 +66,7 @@ methyl_summary <- subset_methyl_summary(methyl_summary,
 
 # Run the Group DMR analysis
 methyl_summary <- find_DMR(methyl_summary, dmr_obj, fixed = c('Group'), 
-                           random = c('Plant'), reads_threshold = 3, 
+                           random = c('Individual'), reads_threshold = 3, 
                            control = 'C', model = 'binomial', 
                            analysis_type = 'group')
 
@@ -85,7 +86,7 @@ methyl_summary <- find_DMR(methyl_summary, dmr_obj, fixed = c('Group'),
 changepoint_cols = find_changepoint_col_options(methyl_summary)
 
 # The target genes of interest
-target_genes <- c()
+target_genes <- unique(dmr_obj$ZoomFrame_filtered$Gene)
 
 # Run the changepoint_analysis function
 methyl_summary <- changepoint_analysis(methyl_summary, CG_penalty = 9, 
