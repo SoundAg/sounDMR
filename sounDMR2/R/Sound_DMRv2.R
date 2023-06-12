@@ -1293,7 +1293,7 @@ generate_zoomframe <- function(gene_cord_df, MFrame, Gene_col="Gene_name", filte
     if( any(gene_cord_df$Chromosome[i]==MFrame$Chromosome) ){ #make sure the chromosomes match between Mframe and gene_cord_df
       if ( max(MFrame$Position)>=gene_cord_df$Adapt_Low[i] && (min(MFrame$Position)<=gene_cord_df$Adapt_High[i]) ) {
         Gene_subset <- MFrame[MFrame$Chromosome %in% gene_cord_df$Chromosome[i], ] #subset based on the gene
-        Gene_subset <- Gene_subset %>% filter(Position >= (gene_cord_df$Adapt_Low[i]) & Position <=(gene_cord_df$Adapt_High[i]) )
+        Gene_subset <- Gene_subset %>% dplyr::filter(Position >= (gene_cord_df$Adapt_Low[i]) & Position <=(gene_cord_df$Adapt_High[i]) )
         Gene_subset$Gene <- gene_cord_df[[Gene_col]][i] #Add-in the gene/geneID names
         if (gene_cord_df$Strand[i]=="+") {
           Gene_subset$Zeroth_pos <- (Gene_subset$Position - gene_cord_df$Low[i]) #Computing the Zeroth position to center everything around ATG.
