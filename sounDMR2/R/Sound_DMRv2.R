@@ -291,14 +291,16 @@ create_cols_for_individuals <- function(Exp_ID_Treated,
 #' @param dmr_obj the dmr object containing the experimental design and raw data
 #'
 #' @export
-create_methyl_summary <- function(dmr_obj, control = 'C', colnames_of_interest) {
-  colnames_of_interest <- c('Chromosome', 'Gene', 'Position', 'Strand', 'CX',
-                            'Zeroth_pos', 'Plant')
+create_methyl_summary <- function(dmr_obj, control = 'C',
+                                  colnames_of_interest = c('Chromosome', 'Gene',
+                                                           'Position', 'Strand', 'CX',
+                                                           'Zeroth_pos', 'Plant'),
+                                  aggregate_function = mean) {
   # Create the summary files
-  GeneDepthPlant <- dcast(dmr_obj$LongMeth,Gene*Zeroth_pos~Plant,mean,
+  GeneDepthPlant <- dcast(dmr_obj$LongMeth,Gene*Zeroth_pos~Plant,aggregate_function,
                           value.var = "total_RD", na.rm=TRUE)
-  GenePercentGroup <- create_gene_percent_x(dmr_obj$LongPercent, 'Group', mean)
-  GenePercentPlant <- create_gene_percent_x(dmr_obj$LongPercent, 'Plant', mean)
+  GenePercentGroup <- create_gene_percent_x(dmr_obj$LongPercent, 'Group', aggregate_function)
+  GenePercentPlant <- create_gene_percent_x(dmr_obj$LongPercent, 'Plant', aggregate_function)
   # QC
   # Make sure the GenePercentX dfs are the same length as the Zoomframe_filtered
   # and in the same order
