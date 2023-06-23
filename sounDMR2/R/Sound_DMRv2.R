@@ -289,6 +289,11 @@ create_cols_for_individuals <- function(Exp_ID_Treated,
 #'
 #' @inheritParams create_cols_for_individuals
 #' @param dmr_obj the dmr object containing the experimental design and raw data
+#' @param treated the string representing the treated group
+#' @param additional_summary_cols a nested list of parameters to create additional
+#' summary columns. Each nested list will be a tuple where the first value is
+#' the summary stats function (e.g. sd, mean, var) and the second value is the
+#' string name of the column on which to run the summary statistic function
 #'
 #' @export
 create_methyl_summary <- function(dmr_obj, control = 'C', treated = 'T',
