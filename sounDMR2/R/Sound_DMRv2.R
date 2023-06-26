@@ -289,16 +289,24 @@ create_cols_for_individuals <- function(Exp_ID_Treated,
 #'
 #' @inheritParams create_cols_for_individuals
 #' @param dmr_obj the dmr object containing the experimental design and raw data
+#' @param treated the string representing the treated group
+#' @param additional_summary_cols a nested list of parameters to create additional
+#' summary columns. Each nested list will be a tuple where the first value is
+#' the summary stats function (e.g. sd, mean, var) and the second value is the
+#' string name of the column on which to run the summary statistic function
 #'
 #' @export
-create_methyl_summary <- function(dmr_obj, control = 'C', colnames_of_interest) {
-  colnames_of_interest <- c('Chromosome', 'Gene', 'Position', 'Strand', 'CX',
-                            'Zeroth_pos', 'Plant')
+create_methyl_summary <- function(dmr_obj, control = 'C', treated = 'T',
+                                  colnames_of_interest = c('Chromosome', 'Gene',
+                                                           'Position', 'Strand', 'CX',
+                                                           'Zeroth_pos', 'Plant'),
+                                  additional_summary_cols = list()) {
   # Create the summary files
   GeneDepthPlant <- dcast(dmr_obj$LongMeth,Gene*Zeroth_pos~Plant,mean,
                           value.var = "total_RD", na.rm=TRUE)
   GenePercentGroup <- create_gene_percent_x(dmr_obj$LongPercent, 'Group', mean)
   GenePercentPlant <- create_gene_percent_x(dmr_obj$LongPercent, 'Plant', mean)
+
   # QC
   # Make sure the GenePercentX dfs are the same length as the Zoomframe_filtered
   # and in the same order
@@ -331,8 +339,19 @@ create_methyl_summary <- function(dmr_obj, control = 'C', colnames_of_interest) 
 
   #Add in any summary statistic columns, such as this one
   Output_Frame <- cbind(Output_Frame,GenePercentPlant[,3:ncol(GenePercentPlant)])
-  Output_Frame$Treat_V_Control <- GenePercentGroup[,'T'] - GenePercentGroup[[control]]
+  Output_Frame$Treat_V_Control <- GenePercentGroup[[treated]] - GenePercentGroup[[control]]
   Output_Frame$Control <- GenePercentGroup[[control]]
+  Output_Frame$Treated <- GenePercentGroup[[treated]]
+
+  # Additional summary columns
+  if (length(additional_summary_cols) != 0) {
+    for (tuple in additional_summary_cols) {
+      GenePercentX = create_gene_percent_x(dmr_obj$LongPercent, x = tuple[[2]],
+                                           function_name = tuple[[1]])
+      GenePercentX <- GenePercentX %>% select(-c(Gene, Zeroth_pos))
+      Output_Frame <- cbind(Output_Frame, GenePercentX)
+    }
+  }
 
   return(Output_Frame)
 }
@@ -1064,7 +1083,6 @@ sound_score <- function(changepoint_OF = dataframe, Statistic="Z_GroupT_small", 
 #' @description
 #' A function to create a data frame for every individual in the experimental design without having to re run for every individual separately.
 #' This function takes in the methyl_bed file, subsets and then creates Methylated and unmethylated counts for each position to be used in the next steps.
-#'
 #' @param Methyl_bed (df) - Data frame containing the ONT methylation calls in a bed file for each individual separately
 #' @param Sample_ID (str) - A string that is used inplace of sample name to keep it uniform. We are using an enumerator to generate this based on the number of samples/individuals in the experiment.
 #' @param Methyl_call_type (str) - A string that includes information about the type of run. Currently this package works on Megalodon , DSP (DeepSignal Plant), Dorado and Bonito. Default call type is Dorado.
@@ -1077,7 +1095,9 @@ get_standard_methyl_bed <-function(Methyl_bed="Methyl.bed", Sample_ID = "S1", Me
 
   # Extract columns of interest based on which process was run
   #Columns of Interest include Chromosome|Position|Strand|Total_reads|Percent_Methylation|Cytosine_context
+
   if (Methyl_call_type %in% c('DSP', 'Bonito', 'Dorado'){
+
     Methyl_bed_sub <- Methyl_bed[,c(1,2,6,10,11,12)]
   }
     else if(Methyl_call_type=="Megalodon"){
@@ -1128,6 +1148,7 @@ generate_megaframe <- function(methyl_bed_list="All_methyl_beds", Sample_count =
   if(Methyl_call_type==""){
     cat("Methylation call type not given, using default type i.e Dorado \n")
   }
+
 
   if (!(Methyl_call_type %in% c('DSP', 'Megalodon', 'Bonito', 'Dorado'))){
     stop("Methylation call not recognized, use 'DSP' or 'Megalodon' or 'Bonito' or 'Dorado', exiting!")
@@ -1285,6 +1306,7 @@ generate_zoomframe <- function(gene_cord_df, MFrame, Gene_col, filter_NAs=0, tar
   #set the filter based on how stringent it needs to be based on the plot
   MFrame <- MFrame[MFrame$NAs<=(filter_NAs*3),]
 
+
   cat("Creating the ZoomFrame! \n")
 
   #create an empty df()
@@ -1383,11 +1405,11 @@ generate_methylframe <-function(methyl_bed_list=All_methyl_beds, Sample_count = 
     stop("gene_info is TRUE. Please provide gene-coordinates file, additional values such as Gene_column and re-run the function. Look into documentation for additional information \n") 
   }
 
+
   Megaframe <- generate_megaframe(methyl_bed_list=methyl_bed_list, Sample_count = 0, 
                                     Methyl_call_type=Methyl_call_type,  File_prefix="Sample")
   
-  if (gene_info==TRUE) {
-    
+  if (gene_info==TRUE) {    
     cat('\n Filtering NAs default is set to 0, See documentation for ideas on how to use the filter \n \n')
     
     
@@ -1399,7 +1421,6 @@ generate_methylframe <-function(methyl_bed_list=All_methyl_beds, Sample_count = 
     return(Zoomframe)
   }
   else {
-    
     
     #Duplicating the column for downstream analysis since the functions look for a Zeroth_pos column
     Megaframe$Zeroth_pos <- Megaframe$Position
