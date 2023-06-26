@@ -1391,8 +1391,8 @@ generate_zoomframe <- function(gene_cord_df, MFrame, Gene_col, filter_NAs=0, tar
 #'Adapt_Low and Adapt_High : Cordinates for adaptive regions around the Lower and Higher co-ordinate of the gene respectively
 #' @param File_prefix (Flexible str) - This is to add a prefix to all the files that get exported and saved to the working directory while running the function.
 #' @return Megaframe(df) or Zoomframe(df) - Clean data frame containing combined methyl bed information for every individual in the experiment.
-#' @inheritParams Megaframe
-#' @inheritParams Zoomframe
+#' @inheritParams generate_megaframe
+#' @inheritParams generate_zoomframe
 #' @import tidyverse
 #' @examples
 #' Basic usage for methyl_call_type
