@@ -26,9 +26,9 @@ All_methyl_beds <- list.files(path=".",pattern="*methyl.bed")
 #If gene_info is false in the below parameter then this returns a megaframe and if True it returns the zoomframe
 Methylframe <- generate_methylframe(methyl_bed_list=All_methyl_beds, Sample_count = 0, 
                                   Methyl_call_type="Dorado", filter_NAs = 0,
-                                  gene_info = TRUE, gene_coordinate_file = Geneco, Gene_column='Gene_Name',
-                                  target_info=TRUE, 
-                                  File_prefix="Sample") 
+                                  gene_info = FALSE, gene_coordinate_file = Geneco, Gene_column='Gene_name',
+                                  target_info=FALSE, 
+                                  File_prefix="Sample")
 
 
 #P.S The above function creates The experimental_design starter doesn't have any information with respect to treatments, rounds etc. 
@@ -49,7 +49,8 @@ dmr_obj <- create_dmr_obj(Methylframe, experimental_design_df)
 # Creating Differential Methylation Output File
 #-----------------------------------------------
 
-methyl_summary <- create_methyl_summary(dmr_obj, control = 'C')
+methyl_summary <- create_methyl_summary(dmr_obj, control = 'C', treated = 'T',
+                                        additional_summary_cols = list(c(sd, 'Group')))
 
 # Option to subset methyl_summary
 individuals_of_interest = unique(dmr_obj$experimental_design_df$Individual)
@@ -61,7 +62,7 @@ methyl_summary <- subset_methyl_summary(methyl_summary,
 #--------------------
 
 # Run the Group DMR analysis
-methyl_summary <- find_DMR(methyl_summary, dmr_obj, fixed = c('Group'), 
+methyl_summary_gene_info <- find_DMR(methyl_summary_gene_info, dmr_obj, fixed = c('Group'), 
                            random = c('Individual'), reads_threshold = 3, 
                            control = 'C', model = 'binomial', 
                            analysis_type = 'group')
@@ -79,13 +80,13 @@ methyl_summary <- find_DMR(methyl_summary, dmr_obj, fixed = c('Group'),
 # Changepoint Analysis
 #----------------------
 # Get the potential column names to run changepoint analysis on
-changepoint_cols = find_changepoint_col_options(methyl_summary)
+changepoint_cols = find_changepoint_col_options(methyl_summary_no_gene_info)
 
 # The target genes of interest
-target_genes <- unique(dmr_obj$ZoomFrame_filtered$Gene)
+target_genes <- unique(dmr_obj_no_gene_info$ZoomFrame_filtered$Gene)
 
 # Run the changepoint_analysis function
-methyl_summary <- changepoint_analysis(methyl_summary, CG_penalty = 9, 
+methyl_summary_gene_info <- changepoint_analysis(methyl_summary_gene_info, CG_penalty = 9, 
                                        CHG_penalty = 4, CHH_penalty = 7, 
                                        target_genes = target_genes,
                                        save_plots = F,
@@ -95,10 +96,12 @@ methyl_summary <- changepoint_analysis(methyl_summary, CG_penalty = 9,
 # DMR score rendering
 #----------------------
 
-DMR_score <- sound_score(changepoint_OF = methyl_summary, 
+DMR_score_gene_info <- sound_score(changepoint_OF = methyl_summary_gene_info, 
                          Statistic = changepoint_cols[1], 
-                         Per_Change = "Treat_V_Control", 
-                         other_columns=c("Control", "Estimate_GroupT_small"))
+                         Per_Change = "Treat_V_Control", CF = T,
+                         other_columns=c("Control", "Estimate_GroupT_small"),
+                         UserFunction = NA)
 
-
-boot_score(sound_score_obj = DMR_score, target_gene = "AT1G01640", scoring_col_name="dmr_score2")
+# Only run bootscore if gene info is available
+DMR_boot_score <- boot_score(sound_score_obj = DMR_score_gene_info, 
+                             target_gene = "AT1G01640", scoring_col_name="dmr_score2")
