@@ -146,7 +146,7 @@ create_dmr_obj <- function(ZoomFrame = dataframe,
     print('LongPercent contains the expected number of rows')
   } else {
     print(paste('LongPercent contains', nrow(LongPercent), 'rows. Expected:',
-                (nrow(Zoom_Frame_filtered) * nrow(experimental_design_df)), 'rows'))
+                (nrow(ZoomFrame_filtered) * nrow(experimental_design_df)), 'rows'))
   }
 
   print('Step 5: merging long files with experimental_design_df to annotate')
@@ -1086,24 +1086,24 @@ sound_score <- function(changepoint_OF = dataframe, Statistic="Z_GroupT_small", 
 #'
 #' @param Methyl_bed (df) - Data frame containing the ONT methylation calls in a bed file for each individual separately
 #' @param Sample_ID (str) - A string that is used inplace of sample name to keep it uniform. We are using an enumerator to generate this based on the number of samples/individuals in the experiment.
-#' @param Methyl_call_type (str) - A string that includes information about the type of run. Currently this package works on Megalodon , DSP (DeepSignal Plant) and Bonito.
+#' @param Methyl_call_type (str) - A string that includes information about the type of run. Currently this package works on Megalodon , DSP (DeepSignal Plant), Dorado and Bonito. Default call type is Dorado. This will apply for Deepsignal Plant as well as Bonito.
 #' @return Methyl_bed_sub (df) - Standard data frame methyl file for every individual with Meth, Unmeth and Per_Meth columns
 #' @import tidyverse
 #' @import stringr
 #' @export
 
-get_standard_methyl_bed <-function(Methyl_bed="Methyl.bed", Sample_ID = "S1", Methyl_call_type="") {
+get_standard_methyl_bed <-function(Methyl_bed="Methyl.bed", Sample_ID = "S1", Methyl_call_type="Dorado") {
 
   # Extract columns of interest based on which process was run
   #Columns of Interest include Chromosome|Position|Strand|Total_reads|Percent_Methylation|Cytosine_context
-  if (Methyl_call_type=='DSP'| Methyl_call_type=='Bonito'){
+  if (Methyl_call_type=='DSP'| Methyl_call_type=='Bonito' | Methyl_call_type=='Dorado'){
     Methyl_bed_sub <- Methyl_bed[,c(1,2,6,10,11,12)]
   }
     else if(Methyl_call_type=="Megalodon"){
     Methyl_bed_sub <- Methyl_bed[,c(1,2,6,10,11,13)]
-  }
-  colnames(Methyl_bed_sub) <- c("Chromosome","Position",paste("Strand", Sample_ID, sep="_"),"Tot_reads", paste("PerMeth", Sample_ID, sep="_") ,
-                             paste("CX", Sample_ID, sep="_")) #Assign column names.
+    }
+  #Assign column names
+  colnames(Methyl_bed_sub) <- c("Chromosome","Position",paste("Strand", Sample_ID, sep="_"),"Tot_reads", paste("PerMeth", Sample_ID, sep="_") ,paste("CX", Sample_ID, sep="_")) 
   #calculate Meth and Unmeth reads from total reads. This is necessary for downstream Differential Methylation Region (DMR) analysis.
   Methyl_bed_sub[[paste("Meth", Sample_ID, sep="_")]] <- round( (Methyl_bed_sub[[paste("PerMeth", Sample_ID, sep="_")]] * Methyl_bed_sub$Tot_reads)/100 )
   Methyl_bed_sub[[paste("UnMeth", Sample_ID, sep="_")]] <- (Methyl_bed_sub$Tot_reads - Methyl_bed_sub[[paste("Meth", Sample_ID, sep="_")]])
@@ -1135,7 +1135,7 @@ get_standard_methyl_bed <-function(Methyl_bed="Methyl.bed", Sample_ID = "S1", Me
 
 
 
-generate_megaframe <- function(methyl_bed_list="All_methyl_beds", Sample_count = 0, Methyl_call_type="DSP",  File_prefix=""){
+generate_megaframe <- function(methyl_bed_list="All_methyl_beds", Sample_count = 0, Methyl_call_type="Dorado",  File_prefix=""){
 
   #QC
     QC <- missing(methyl_bed_list)
@@ -1145,11 +1145,11 @@ generate_megaframe <- function(methyl_bed_list="All_methyl_beds", Sample_count =
   }
 
   if(Methyl_call_type==""){
-    stop("Methylation call type cannot be blank! Provide a value before proceeding")
+    cat("Methylation call type not given, using default type i.e Dorado \n")
   }
 
-  if (Methyl_call_type!="DSP" & Methyl_call_type!="Megalodon" & Methyl_call_type!="Bonito"){
-    stop("Methylation call not recognized, use 'DSP' or 'Megalodon' or 'Bonito', exiting!")
+  if (Methyl_call_type!="DSP" & Methyl_call_type!="Megalodon" & Methyl_call_type!="Bonito" & Methyl_call_type!="Dorado"){
+    stop("Methylation call not recognized, use 'DSP' or 'Megalodon' or 'Bonito' or 'Dorado', exiting!")
 
   }
 
@@ -1270,7 +1270,7 @@ add_zoom_coords <- function(target, gene_cord_df, geneco_index, gcoord_exist=TRU
             target$Zoom_co[i] <- 0 #Region beyond adaptve sequence
         }
       } else {
-          print ("Gene Names don't match, please check the gene_cord_df file")
+          print ("Gene Names don't match, please check the gene_coordinate file")
       }
     }
   }
@@ -1299,10 +1299,10 @@ add_zoom_coords <- function(target, gene_cord_df, geneco_index, gcoord_exist=TRU
 #' @import stringr
 #' @export
 
-generate_zoomframe <- function(gene_cord_df, MFrame, Gene_col="Gene_name", filter_NAs=0, target_info=TRUE, gene_list = Geneco$Gene_name, File_prefix="") {
+generate_zoomframe <- function(gene_cord_df, MFrame, Gene_col, filter_NAs=0, target_info=TRUE, gene_list=gene_cord_df[[Gene_col]], File_prefix="") {
 
   #set the filter based on how stringent it needs to be based on the plot
-  MFrame[MFrame$NAs<(filter_NAs*3),]->MFrame
+  MFrame[MFrame$NAs<=(filter_NAs*3),]->MFrame
 
   cat("Creating the ZoomFrame! \n")
 
@@ -1356,6 +1356,82 @@ generate_zoomframe <- function(gene_cord_df, MFrame, Gene_col="Gene_name", filte
 
   return(Final_gene_set)
 }
+
+#' Create Methylframe
+#'
+#' A function to create either Megaframe (A single data frame containing all samples bedMethyl data) or Zoomframe (A version of the Megaframe which includes the Gene Name, Position Zero'ed in on ATG of the respective gene and other columns to help with downstream analysis) 
+#' NOTE: 
+#' 1.  In both cases, Megaframe data will be exported in the current working directory and Zoomframe will only be exported if the Gene coordinates file is provided
+#' 2. If this function is run using 'gene_info= TRUE' then it needs additional parameters like gene_cordinate_file,  Gene_column,target_info, gene_list etc to precoeed. If no such file is present, enter gene_info as false and
+#'
+#' @param methyl_bed_list (list) - ONT methyl bed filenames for each individual contained within the directory. This will just be a list of bedfile names.
+#' Hint : The input will be the "methyl_bed_list" vector that you create in the previous step.
+#' @param Sample_count (int) - This is required to assign proper alphabet codes. If you need to include the samples from a previous round, then enter the total number of samples from the previous round here. Default is 0. By default alphabetizing starts with 'A'.
+#' @param Methyl_call_type (str) - A string that includes information about the type of run. Currently this package works on Megalodon , DSP (DeepSignal Plant) and Bonito.
+#' @param filter_NAs (int) - Select this parameter based on the histogram plot. This will filter out NAs based on per sample, by default this is 0. This filter can be stringent for example using a value of 1 for total of 5 samples or non-stringent 3 for a total of 5 samples. Histogram plot generated in the Megaframe function provides insights on total NAs per sample. Use this to choose the filter. 
+#' @param gene_info (str) - This takes in a boolean variable. If the gene info- coordinates, gene name etc are present then make sure to have the gene-cordinates.csv file in the right format (as shown in the sample data on github).
+#' @param gene_cordinate_file (str) - File containing gene-coordinate info. It is important to be in a specific format and should have but not limited to the following columns : Chromosome | Gene_Name | Low | High | Adapt_Low | Adapt_High
+#' Low and High : These are Start and Stop cordinates of the gene. Low is always the lower coordinate which could be start for the positive stranded gene and stop for the negative stranded gene and vice versa. 
+#'Adapt_Low and Adapt_High : Cordinates for adaptive regions around the Lower and Higher co-ordinate of the gene respectively
+#' @param File_prefix (Flexible str) - This is to add a prefix to all the files that get exported and saved to the working directory while running the function.
+#' @return Megaframe(df) or Zoomframe(df) - Clean data frame containing combined methyl bed information for every individual in the experiment.
+#' @inheritParams Megaframe
+#' @inheritParams Zoomframe
+#' @import tidyverse
+#' @import stringr
+#' @examples
+#' Basic usage for methyl_call_type
+#' 1. With gene coordinate file 
+#' generate_methylframe(methyl_bed_list= <list_of_BedMethyl files>, gene_info = TRUE, gene_cordinate_file = <File with gene info>, Gene_col=<Gene Name/Gene ID>, target_info=TRUE, gene_list = <list of target genes>)
+#' 2. Without gene cooridnate file
+#' generate_methylframe(methyl_bed_list= <list_of_BedMethyl files>, gene_info = FALSE )
+#' @export
+
+generate_methylframe <-function(methyl_bed_list=All_methyl_beds, Sample_count = 0, 
+                                Methyl_call_type="Dorado", filter_NAs=0,
+                                gene_info = FALSE, gene_coordinate_file = NULL, Gene_column='',
+                                target_info=FALSE, gene_list = gene_coordinate_file[[Gene_column]], 
+                                File_prefix="Sample") 
+{
+  
+  if (gene_info!=TRUE & gene_info!=FALSE ){
+    stop("gene_info variable needs to be a boolen variable. Default is False") 
+  }
+  
+  QC <- is.null(gene_coordinate_file)
+  if (gene_info==TRUE & (QC==TRUE | Gene_column=='') ) {
+    stop("gene_info is TRUE. Please provide gene-coordinates file, additional values such as Gene_column and re-run the function. Look into documentation for additional information \n") 
+  }
+  
+  if (gene_info==TRUE) {
+    Megaframe <- generate_megaframe(methyl_bed_list=methyl_bed_list, Sample_count = 0, 
+                                    Methyl_call_type=Methyl_call_type,  File_prefix="Sample")
+    
+    cat('\n Filtering NAs default is set to 0, See documentation for ideas on how to use the filter \n \n')
+    
+    
+    Zoomframe <- generate_zoomframe(gene_cord_df=gene_coordinate_file, MFrame = Megaframe, 
+                                    Gene_col=Gene_column, filter_NAs=filter_NAs, 
+                                    target_info=FALSE, gene_list=gene_list , 
+                                    File_prefix=File_prefix)
+    
+    return(Zoomframe)
+  }
+  else {
+    
+    Megaframe <- generate_megaframe(methyl_bed_list=All_methyl_beds, Sample_count = 0, 
+                                    Methyl_call_type=Methyl_call_type,  File_prefix="Sample")
+    
+    #Duplicating the column for downstream analysis since the functions look for a Zeroth_pos column
+    Megaframe$Zeroth_pos <- Megaframe$Position
+    
+    return(Megaframe)
+    
+  }
+  
+}
+
+
 
 
 #' Boot_score

@@ -17,27 +17,23 @@ Geneco <- read.table(file.choose(), header=TRUE, sep=",")
 #-------------------------
 #The below command works only if all the bed files that you want to work with are in the working directory.
 #Make sure to change the pattern based on your methyl bed file
-All_methyl_beds <- list.files(path=".",pattern="*.bed")
+All_methyl_beds <- list.files(path=".",pattern="*methyl.bed")
 
 
 #-------------------------
-# Create Megaframe
+# Create Methylframe 
 #-------------------------
-Megaframe <- generate_megaframe(methyl_bed_list=All_methyl_beds, Sample_count = 0, 
-                                Methyl_call_type="DSP",  File_prefix="Sample")
+#If gene_info is false in the below parameter then this returns a megaframe and if True it returns the zoomframe
+Methylframe <- generate_methylframe(methyl_bed_list=All_methyl_beds, Sample_count = 0, 
+                                  Methyl_call_type="Dorado", filter_NAs = 0,
+                                  gene_info = TRUE, gene_coordinate_file = Geneco, Gene_column='Gene_Name',
+                                  target_info=TRUE, 
+                                  File_prefix="Sample") 
 
 
 #P.S The above function creates The experimental_design starter doesn't have any information with respect to treatments, rounds etc. 
 #Make sure to add it for DMR analysis
 
-
-#-------------------------
-# Create Zoomframe
-#-------------------------
-Zoomframe <- generate_zoomframe(gene_cord_df = Geneco, MFrame = Megaframe, 
-                                Gene_col="Gene_name", filter_NAs=10, 
-                                target_info=TRUE, gene_list = Geneco$Gene_name, 
-                                File_prefix="Sample")
 
 
 #----------------------------Part 2 : DMR analysis------------------------------
@@ -47,7 +43,7 @@ Zoomframe <- generate_zoomframe(gene_cord_df = Geneco, MFrame = Megaframe,
 #------------
 
 experimental_design_df <- read.table(file.choose(), header=TRUE, sep=",")
-dmr_obj <- create_dmr_obj(Zoomframe, experimental_design_df)
+dmr_obj <- create_dmr_obj(Methylframe, experimental_design_df)
 
 #-----------------------------------------------
 # Creating Differential Methylation Output File
