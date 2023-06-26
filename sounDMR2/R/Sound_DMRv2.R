@@ -289,16 +289,24 @@ create_cols_for_individuals <- function(Exp_ID_Treated,
 #'
 #' @inheritParams create_cols_for_individuals
 #' @param dmr_obj the dmr object containing the experimental design and raw data
+#' @param treated the string representing the treated group
+#' @param additional_summary_cols a nested list of parameters to create additional
+#' summary columns. Each nested list will be a tuple where the first value is
+#' the summary stats function (e.g. sd, mean, var) and the second value is the
+#' string name of the column on which to run the summary statistic function
 #'
 #' @export
-create_methyl_summary <- function(dmr_obj, control = 'C', colnames_of_interest) {
-  colnames_of_interest <- c('Chromosome', 'Gene', 'Position', 'Strand', 'CX',
-                            'Zeroth_pos', 'Plant')
+create_methyl_summary <- function(dmr_obj, control = 'C', treated = 'T',
+                                  colnames_of_interest = c('Chromosome', 'Gene',
+                                                           'Position', 'Strand', 'CX',
+                                                           'Zeroth_pos', 'Plant'),
+                                  additional_summary_cols = list()) {
   # Create the summary files
   GeneDepthPlant <- dcast(dmr_obj$LongMeth,Gene*Zeroth_pos~Plant,mean,
                           value.var = "total_RD", na.rm=TRUE)
   GenePercentGroup <- create_gene_percent_x(dmr_obj$LongPercent, 'Group', mean)
   GenePercentPlant <- create_gene_percent_x(dmr_obj$LongPercent, 'Plant', mean)
+
   # QC
   # Make sure the GenePercentX dfs are the same length as the Zoomframe_filtered
   # and in the same order
@@ -331,8 +339,19 @@ create_methyl_summary <- function(dmr_obj, control = 'C', colnames_of_interest) 
 
   #Add in any summary statistic columns, such as this one
   Output_Frame <- cbind(Output_Frame,GenePercentPlant[,3:ncol(GenePercentPlant)])
-  Output_Frame$Treat_V_Control <- GenePercentGroup[,'T'] - GenePercentGroup[[control]]
+  Output_Frame$Treat_V_Control <- GenePercentGroup[[treated]] - GenePercentGroup[[control]]
   Output_Frame$Control <- GenePercentGroup[[control]]
+  Output_Frame$Treated <- GenePercentGroup[[treated]]
+
+  # Additional summary columns
+  if (length(additional_summary_cols) != 0) {
+    for (tuple in additional_summary_cols) {
+      GenePercentX = create_gene_percent_x(dmr_obj$LongPercent, x = tuple[[2]],
+                                           function_name = tuple[[1]])
+      GenePercentX <- GenePercentX %>% select(-c(Gene, Zeroth_pos))
+      Output_Frame <- cbind(Output_Frame, GenePercentX)
+    }
+  }
 
   return(Output_Frame)
 }
