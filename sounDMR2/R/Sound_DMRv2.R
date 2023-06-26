@@ -964,6 +964,7 @@ changepoint_analysis <- function(whole_df,
   #  remove the first row
   everything <- everything[-1,]
   genes <- unique(whole_df$Gene)
+  large_genes <- c()
 
   # Create a progress bar
   print('Running changepoint analysis:')
@@ -991,7 +992,7 @@ changepoint_analysis <- function(whole_df,
     gene_df.CHH <- add_changepoint_info(gene_df.CHH, x.CHH, z_col)
 
     # Create the plots
-    if (gene %in% target_genes) {
+    if (gene %in% target_genes & nrow(gene_df) < 100000) {
       plot.CG <- plot_changepoints(gene_df.CG, x.CG, gene, CG_penalty, 'CG', z_col)
       plot.CHG <- plot_changepoints(gene_df.CHG, x.CHG, gene, CHG_penalty, 'CHG', z_col)
       plot.CHH <- plot_changepoints(gene_df.CHH, x.CHH, gene, CHH_penalty, 'CHH', z_col)
@@ -1009,6 +1010,8 @@ changepoint_analysis <- function(whole_df,
         print(plot.CHH)
         dev.off()
       }
+    } else if (gene %in% target_genes & nrow(gene_df) >= 100000) {
+      large_genes <- c(large_genes, gene)
     }
 
     # Combine everything into the everything dataframe (rename)
@@ -1018,6 +1021,11 @@ changepoint_analysis <- function(whole_df,
     setTxtProgressBar(pb, i)
   }
   close(pb)
+
+  for (gene in large_genes) {
+    print0(gene, ' has more than 100,000 cytosines. Plot not created')
+  }
+
   return(everything)
 }
 
@@ -1037,62 +1045,53 @@ changepoint_analysis <- function(whole_df,
 
 
 
-sound_score <- function(changepoint_OF = dataframe, Statistic="Z_GroupT_small", Per_Change = "Treat_V_Control", Control="Control", other_columns=c("Estimate_GroupT_small"), CF=FALSE, UserFunction=NA) {
+sound_score <- function(changepoint_OF = dataframe, Statistic="Z_GroupT_small",
+                        Per_Change = "Treat_V_Control", Control="Control",
+                        other_columns=c("Estimate_GroupT_small"), CF=FALSE, UserFunction=NA) {
   # Determine proper column names givwen the test statistic of interest
   MethGroup <- paste("MethGroup_",Statistic, sep = "")
   MethRegion_Z <- paste("MethRegion_",Statistic, sep = "")
   MethRegion_Length <- paste("MethRegionLength_",Statistic, sep = "")
   # Create vector of columns that include information that the user wants aggregated across each changepoint region.  Includes Statistic, Per_Change, region length, and any other columns of interest.
-  c(MethRegion_Z, MethRegion_Length,Per_Change, Control,other_columns )->keep_cols
+  keep_cols <- c(MethRegion_Z, MethRegion_Length,Per_Change, Control,other_columns )
   # Create new dataframe that includes a new column that has a column for every unique changepoint region
   cp_OF <- within(changepoint_OF, cp_group <- paste(Gene,CX,changepoint_OF[[MethGroup]], sep='_'))
   #Calculate statistics and aggregate for every region
-  RegionStats <<- cp_OF %>%
+  RegionStats <- cp_OF %>%
     group_by(cp_group) %>%
     mutate(Count = n()) %>%
     group_by(cp_group, Gene,CX, Count) %>%
     summarise_at(vars(one_of(keep_cols)), mean)
-  
   Ag_Pos <- cp_OF %>%
     group_by(cp_group) %>%
     summarise(Start=min(Zeroth_pos), Stop=max(Zeroth_pos))
-  
-  cbind(Ag_Pos, RegionStats[,-1])->>RegionStats
-  
+  RegionStats <- cbind(Ag_Pos, RegionStats[,-1])
   #Calculate Sound Statistic
-  RegionStats$dmr_score<<-(((RegionStats$Count)^(1/3))*(abs(RegionStats[[MethRegion_Z]])*abs(RegionStats[[Per_Change]]))^(1/2))
-  
-  RegionStats$dmr_score2<<-(((RegionStats$Count)^(1/3))*(abs(RegionStats[[MethRegion_Z]])*abs(asin(sqrt(RegionStats[[Per_Change]]/100+Ag_Groups[[Control]]/100))-asin(sqrt(Ag_Groups[[Control]]/100)))^(1/2)))
-  
-  if(CF==TRUE){
-    RegionStats$CustomFunction<<-UserFunction
-    RegionStats$CustomFunction_Percentile<-ecdf(RegionStats$CustomFunction)(RegionStats$CustomFunction)
-  }
-  
+  RegionStats$dmr_score<-(((RegionStats$Count)^(1/3))*(abs(RegionStats[[MethRegion_Z]])*abs(RegionStats[[Per_Change]]))^(1/2))
+  RegionStats$dmr_score2<-(((RegionStats$Count)^(1/3))*(abs(RegionStats[[MethRegion_Z]])*abs(asin(sqrt(RegionStats[[Per_Change]]/100+RegionStats[[Control]]/100))-asin(sqrt(RegionStats[[Control]]/100)))^(1/2)))
+  # if(CF==TRUE){
+  #   RegionStats$CustomFunction<<-UserFunction
+  #   RegionStats$CustomFunction_Percentile<-ecdf(RegionStats$CustomFunction)(RegionStats$CustomFunction)
+  # }
   for(i in 1:nrow(RegionStats)){
-    if(Ag_Groups[[Per_Change]][i]<0){
-      RegionStats$dmr_score[i]<-RegionStats$dmr_score[i]*-1
-      RegionStats$dmr_score_Percentile<-ecdf(RegionStats$dmr_score)(RegionStats$dmr_score)
-      RegionStats$dmr_score2[i]<-RegionStats$dmr_score2[i]*-1
-      RegionStats$dmr_score2_Percentile<-ecdf(RegionStats$dmr_score2)(RegionStats$dmr_score2)
-      
+    if (!is.na(RegionStats[[Per_Change]][i])) {
+      if(RegionStats[[Per_Change]][i]<0){
+        RegionStats$dmr_score[i]<-RegionStats$dmr_score[i]*-1
+        RegionStats$dmr_score_Percentile<-ecdf(RegionStats$dmr_score)(RegionStats$dmr_score)
+        RegionStats$dmr_score2[i]<-RegionStats$dmr_score2[i]*-1
+        RegionStats$dmr_score2_Percentile<-ecdf(RegionStats$dmr_score2)(RegionStats$dmr_score2)
+      }
     }
   }
-  
-  
-  list(RegionStats, cp_OF)->SS_Obj
+  plot(RegionStats$dmr_score2_Percentile, RegionStats$dmr_score2)
+  plot <- RegionStats %>%
+    ggplot(aes(x = .data[[MethRegion_Z]], y = Count)) +
+    geom_point(aes(color = dmr_score2))
+  print(plot)
+  SS_Obj <- list(RegionStats, cp_OF)
   names(SS_Obj) <- c("region_summary", "methyl_summary")
   return(SS_Obj)
 }
-
-  
-  
-  list(RegionStats, cp_OF)->SS_Obj
-  names(SS_Obj) <- c("region_summary", "methyl_summary")
-  return(SS_Obj)
-}
-
-
 
 #' get_standard_methyl_bed
 #' @description
@@ -1111,7 +1110,7 @@ get_standard_methyl_bed <-function(Methyl_bed="Methyl.bed", Sample_ID = "S1", Me
   # Extract columns of interest based on which process was run
   #Columns of Interest include Chromosome|Position|Strand|Total_reads|Percent_Methylation|Cytosine_context
 
-  if (Methyl_call_type %in% c('DSP', 'Bonito', 'Dorado'){
+  if (Methyl_call_type %in% c('DSP', 'Bonito', 'Dorado')){
 
     Methyl_bed_sub <- Methyl_bed[,c(1,2,6,10,11,12)]
   }
@@ -1119,7 +1118,7 @@ get_standard_methyl_bed <-function(Methyl_bed="Methyl.bed", Sample_ID = "S1", Me
     Methyl_bed_sub <- Methyl_bed[,c(1,2,6,10,11,13)]
     }
   #Assign column names
-  colnames(Methyl_bed_sub) <- c("Chromosome","Position",paste("Strand", Sample_ID, sep="_"),"Tot_reads", paste("PerMeth", Sample_ID, sep="_") ,paste("CX", Sample_ID, sep="_")) 
+  colnames(Methyl_bed_sub) <- c("Chromosome","Position",paste("Strand", Sample_ID, sep="_"),"Tot_reads", paste("PerMeth", Sample_ID, sep="_") ,paste("CX", Sample_ID, sep="_"))
   #calculate Meth and Unmeth reads from total reads. This is necessary for downstream Differential Methylation Region (DMR) analysis.
   Methyl_bed_sub[[paste("Meth", Sample_ID, sep="_")]] <- round( (Methyl_bed_sub[[paste("PerMeth", Sample_ID, sep="_")]] * Methyl_bed_sub$Tot_reads)/100 )
   Methyl_bed_sub[[paste("UnMeth", Sample_ID, sep="_")]] <- (Methyl_bed_sub$Tot_reads - Methyl_bed_sub[[paste("Meth", Sample_ID, sep="_")]])
@@ -1239,7 +1238,7 @@ generate_megaframe <- function(methyl_bed_list="All_methyl_beds", Sample_count =
 
 
   #QC : Filter rows/sample with missing data
-  rowSums(is.na(Megaframe))->Megaframe$NAs
+  Megaframe$NAs <- rowSums(is.na(Megaframe))
   #make a histogram
 
   cat("QC: The plot provides information about missing data that can be filtered out in the next step by using the filter_NAs parameter \n")
@@ -1377,73 +1376,72 @@ generate_zoomframe <- function(gene_cord_df, MFrame, Gene_col, filter_NAs=0, tar
 
 #' Create Methylframe
 #'
-#' A function to create either Megaframe (A single data frame containing all samples bedMethyl data) or Zoomframe (A version of the Megaframe which includes the Gene Name, Position Zero'ed in on ATG of the respective gene and other columns to help with downstream analysis) 
-#' NOTE: 
+#' A function to create either Megaframe (A single data frame containing all samples bedMethyl data) or Zoomframe (A version of the Megaframe which includes the Gene Name, Position Zero'ed in on ATG of the respective gene and other columns to help with downstream analysis)
+#' NOTE:
 #' 1.  In both cases, Megaframe data will be exported in the current working directory and Zoomframe will only be exported if the Gene coordinates file is provided
 #' 2. If this function is run using 'gene_info= TRUE' then it needs additional parameters like gene_cordinate_file,  Gene_column,target_info, gene_list etc to precoeed. If no such file is present, enter gene_info as false and
 #'
 #' @param methyl_bed_list (list) - ONT methyl bed filenames for each individual contained within the directory. This will just be a list of bedfile names. The input will be the "methyl_bed_list" vector that you create in the previous step.
 #' @param Sample_count (int) - This is required to assign proper alphabet codes. If you need to include the samples from a previous round, then enter the total number of samples from the previous round here. Default is 0. By default alphabetizing starts with 'A'.
 #' @param Methyl_call_type (str) - A string that includes information about the type of run. Currently this package works on Megalodon , DSP (DeepSignal Plant) and Bonito.
-#' @param filter_NAs (int) - Select this parameter based on the histogram plot. This will filter out NAs based on per sample, by default this is 0. 
+#' @param filter_NAs (int) - Select this parameter based on the histogram plot. This will filter out NAs based on per sample, by default this is 0.
 #' @param gene_info (str) - This takes in a boolean variable. If the gene info- coordinates, gene name etc are present then make sure to have the gene-cordinates.csv file in the right format (as shown in the sample data on github).
 #' @param gene_cordinate_file (str) - File containing gene-coordinate info. It is important to be in a specific format and should have but not limited to the following columns : Chromosome | Gene_Name | Low | High | Adapt_Low | Adapt_High
-#' Low and High : These are Start and Stop cordinates of the gene. Low is always the lower coordinate which could be start for the positive stranded gene and stop for the negative stranded gene and vice versa. 
+#' Low and High : These are Start and Stop cordinates of the gene. Low is always the lower coordinate which could be start for the positive stranded gene and stop for the negative stranded gene and vice versa.
 #'Adapt_Low and Adapt_High : Cordinates for adaptive regions around the Lower and Higher co-ordinate of the gene respectively
 #' @param File_prefix (Flexible str) - This is to add a prefix to all the files that get exported and saved to the working directory while running the function.
 #' @return Megaframe(df) or Zoomframe(df) - Clean data frame containing combined methyl bed information for every individual in the experiment.
 #' @inheritParams Megaframe
 #' @inheritParams Zoomframe
 #' @import tidyverse
-#' @import stringr
 #' @examples
 #' Basic usage for methyl_call_type
-#' 1. With gene coordinate file 
+#' 1. With gene coordinate file
 #' generate_methylframe(methyl_bed_list= <list_of_BedMethyl files>, gene_info = TRUE, gene_cordinate_file = <File with gene info>, Gene_col=<Gene Name/Gene ID>, target_info=TRUE, gene_list = <list of target genes>)
 #' 2. Without gene cooridnate file
 #' generate_methylframe(methyl_bed_list= <list_of_BedMethyl files>, gene_info = FALSE )
 #' @export
 
-generate_methylframe <-function(methyl_bed_list=All_methyl_beds, Sample_count = 0, 
+generate_methylframe <-function(methyl_bed_list=All_methyl_beds, Sample_count = 0,
                                 Methyl_call_type="Dorado", filter_NAs=0,
                                 gene_info = FALSE, gene_coordinate_file = NULL, Gene_column='',
-                                target_info=FALSE, gene_list = gene_coordinate_file[[Gene_column]], 
-                                File_prefix="Sample") 
+                                target_info=FALSE, gene_list = gene_coordinate_file[[Gene_column]],
+                                File_prefix="Sample")
 {
-  
-  if (typeof(gene_info) == 'logical'){
-    stop("gene_info variable needs to be a boolen variable. Default is False") 
+
+  if (typeof(gene_info) != 'logical'){
+    stop("gene_info variable needs to be a boolen variable. Default is False")
   }
-  
+
   QC <- is.null(gene_coordinate_file)
   if (gene_info==TRUE & (QC==TRUE | Gene_column=='') ) {
-    stop("gene_info is TRUE. Please provide gene-coordinates file, additional values such as Gene_column and re-run the function. Look into documentation for additional information \n") 
+    stop("gene_info is TRUE. Please provide gene-coordinates file, additional values such as Gene_column and re-run the function. Look into documentation for additional information \n")
   }
 
 
-  Megaframe <- generate_megaframe(methyl_bed_list=methyl_bed_list, Sample_count = 0, 
+  Megaframe <- generate_megaframe(methyl_bed_list=methyl_bed_list, Sample_count = 0,
                                     Methyl_call_type=Methyl_call_type,  File_prefix="Sample")
-  
-  if (gene_info==TRUE) {    
+
+  if (gene_info==TRUE) {
     cat('\n Filtering NAs default is set to 0, See documentation for ideas on how to use the filter \n \n')
-    
-    
-    Zoomframe <- generate_zoomframe(gene_cord_df=gene_coordinate_file, MFrame = Megaframe, 
-                                    Gene_col=Gene_column, filter_NAs=filter_NAs, 
-                                    target_info=FALSE, gene_list=gene_list , 
+
+
+    Zoomframe <- generate_zoomframe(gene_cord_df=gene_coordinate_file, MFrame = Megaframe,
+                                    Gene_col=Gene_column, filter_NAs=filter_NAs,
+                                    target_info=FALSE, gene_list=gene_list ,
                                     File_prefix=File_prefix)
-    
+
     return(Zoomframe)
   }
   else {
-    
+
     #Duplicating the column for downstream analysis since the functions look for a Zeroth_pos column
     Megaframe$Zeroth_pos <- Megaframe$Position
-    
+
     return(Megaframe)
-    
+
   }
-  
+
 }
 
 
@@ -1468,33 +1466,33 @@ boot_score<-function(sound_score_obj = NA, target_gene= NA, target_start=-1000, 
   rs<-sound_score_obj$region_summary
   ms<-sound_score_obj$methyl_summary
   target_rs<-rs[rs$Gene==target_gene,]
-  
+
   #create data frame to be filled with results of bootstrapping
   boot_out <- data.frame(matrix(ncol = 5, nrow = nboots+1))
-  
+
   #provide column names
   colnames(boot_out) <- c('Gene', 'CG_Score', 'CHG_Score', "CHH_Score", 'Target')
-  
+
   #Calculate precision adjusted score for each change point region
-  target_rs %>%
+  target_rs <- target_rs %>%
     group_by(cp_group) %>%
     mutate(distance_from_target= min(c(abs(Start-target_start), abs(Start-target_end),abs(Stop-target_start), abs(Stop-target_end))),
            distance_from_target=ifelse(Start<=target_start & Stop >= target_end | Start>=target_start & Stop <= target_end , 0, distance_from_target),
-           adjusted_soundscore= ifelse(distance_from_target>10000,0,(1-(0.0001*distance_from_target))*!!as.name(scoring_col_name))) -> target_rs
-  
+           adjusted_soundscore= ifelse(distance_from_target>10000,0,(1-(0.0001*distance_from_target))*!!as.name(scoring_col_name)))
+
   if(direction_DMR=="negative"){
     target_rs$adjusted_soundscore<-target_rs$adjusted_soundscore*(-1)
   }
-  
+
   if(direction_DMR=="absolute"){
     target_rs$adjusted_soundscore<-abs(target_rs$adjusted_soundscore)
   }
-  
+
   #Find strongest DMR around target gene
   boot_out$CG_Score[1]<-max(target_rs$adjusted_soundscore[target_rs$CX=="CG"])
   boot_out$CHG_Score[1]<-max(target_rs$adjusted_soundscore[target_rs$CX=="CHG"])
   boot_out$CHH_Score[1]<-max(target_rs$adjusted_soundscore[target_rs$CX=="CHH"])
-  
+
   # Write info to Boot_Object
   boot_out$Target[1]<- 1
   boot_out$Gene[1]<-target_gene
@@ -1504,15 +1502,15 @@ boot_score<-function(sound_score_obj = NA, target_gene= NA, target_start=-1000, 
   boot_out$Stop_CHG[1]<-target_rs$Stop[target_rs$adjusted_soundscore==max(target_rs$adjusted_soundscore[target_rs$CX=="CHG"]) & target_rs$CX=="CHG"]
   boot_out$Start_CHH[1]<-target_rs$Start[target_rs$adjusted_soundscore==max(target_rs$adjusted_soundscore[target_rs$CX=="CHH"]) & target_rs$CX=="CHH"]
   boot_out$Stop_CHH[1]<-target_rs$Stop[target_rs$adjusted_soundscore==max(target_rs$adjusted_soundscore[target_rs$CX=="CHH"]) & target_rs$CX=="CHH"]
-  
+
   # Make non-target frame
   nontarget_ms<-ms[ms$Gene!=target_gene,]
-  
+
   # Create lookup table with info for each gene
-  nontarget_ms %>%
+  nontarget_region_lookup <- nontarget_ms %>%
     group_by(Gene) %>%
-    summarise(Start=min(Zeroth_pos), Stop=max(Zeroth_pos))  -> nontarget_region_lookup
-  
+    summarise(Start=min(Zeroth_pos), Stop=max(Zeroth_pos))
+
   # Determine if gene is far enough from end of contig to be used for bootstrapping
   nontarget_ms$far_enough<-FALSE
   for(i in 1:nrow(nontarget_region_lookup)){
@@ -1520,32 +1518,32 @@ boot_score<-function(sound_score_obj = NA, target_gene= NA, target_start=-1000, 
   }
   #subset to only include these rows
   nontarget_ms_good_distance<-nontarget_ms[nontarget_ms$far_enough==TRUE,]
-  
+
   # sample from rows
   boot_positions<-sample_n(nontarget_ms_good_distance, nboots, replace=TRUE)
-  
+
   # run bootstrapping
   for(i in 1:nrow(boot_positions)){
-    rs[rs$Gene==boot_positions$Gene[i],]->boot_rs
-    boot_positions$Zeroth_pos[i]->target_start
-    boot_positions$Zeroth_pos[i]->target_end
-    boot_rs %>%
+    boot_rs <- rs[rs$Gene==boot_positions$Gene[i],]
+    target_start <- boot_positions$Zeroth_pos[i]
+    target_end <- boot_positions$Zeroth_pos[i]
+    boot_rs <- boot_rs %>%
       group_by(cp_group) %>%
       mutate(distance_from_target= min(c(abs(Start-target_start), abs(Start-target_end),abs(Stop-target_start), abs(Stop-target_end))),
              distance_from_target=ifelse(Start<=target_start & Stop >= target_end | Start>=target_start & Stop <= target_end , 0, distance_from_target),
-             adjusted_soundscore= ifelse(distance_from_target>10000,0,(1-(0.0001*distance_from_target))*!!as.name(scoring_col_name ))) -> boot_rs
-    
+             adjusted_soundscore= ifelse(distance_from_target>10000,0,(1-(0.0001*distance_from_target))*!!as.name(scoring_col_name )))
+
     # Write info to Boot_Object
-    
+
     if(direction_DMR=="negative"){
       boot_rs$adjusted_soundscore<-boot_rs$adjusted_soundscore*(-1)
     }
-    
+
     if(direction_DMR=="absolute"){
       boot_rs$adjusted_soundscore<-abs(boot_rs$adjusted_soundscore)
     }
-    
-    
+
+
     boot_out$CG_Score[i+1]<-max(boot_rs$adjusted_soundscore[boot_rs$CX=="CG"])
     boot_out$CHG_Score[i+1]<-max(boot_rs$adjusted_soundscore[boot_rs$CX=="CHG"])
     boot_out$CHH_Score[i+1]<-max(boot_rs$adjusted_soundscore[boot_rs$CX=="CHH"])
@@ -1557,27 +1555,27 @@ boot_score<-function(sound_score_obj = NA, target_gene= NA, target_start=-1000, 
     boot_out$Stop_CHG[i+1]<-boot_rs$Stop[boot_rs$adjusted_soundscore==max(boot_rs$adjusted_soundscore[boot_rs$CX=="CHG"]) & boot_rs$CX=="CHG"][1]
     boot_out$Start_CHH[i+1]<-boot_rs$Start[boot_rs$adjusted_soundscore==max(boot_rs$adjusted_soundscore[boot_rs$CX=="CHH"]) & boot_rs$CX=="CHH"][1]
     boot_out$Stop_CHH[i+1]<-boot_rs$Stop[boot_rs$adjusted_soundscore==max(boot_rs$adjusted_soundscore[boot_rs$CX=="CHH"]) & boot_rs$CX=="CHH"][1]
-    
+
   }
-  
-  boot_out[!duplicated(boot_out[c(1,2)]),]->bo_CG
-  boot_out[!duplicated(boot_out[c(1,3)]),]->bo_CHG
-  boot_out[!duplicated(boot_out[c(1,4)]),]->bo_CHH
-  
-  bo_CG[order(-bo_CG$CG_Score),]->bo_CG_order
-  bo_CHG[order(-bo_CHG$CHG_Score),]->bo_CHG_order
-  bo_CHH[order(-bo_CHH$CHH_Score),]->bo_CHH_order
-  
+
+  bo_CG <- boot_out[!duplicated(boot_out[c(1,2)]),]
+  bo_CHG <- boot_out[!duplicated(boot_out[c(1,3)]),]
+  bo_CHH <- boot_out[!duplicated(boot_out[c(1,4)]),]
+
+  bo_CG_order <- bo_CG[order(-bo_CG$CG_Score),]
+  bo_CHG_order <- bo_CHG[order(-bo_CHG$CHG_Score),]
+  bo_CHH_order <- bo_CHH[order(-bo_CHH$CHH_Score),]
+
   bo_CG_order$rank<-c(seq(1, nrow(bo_CG_order), by=1))
   bo_CHG_order$rank<-c(seq(1, nrow(bo_CHG_order), by=1))
   bo_CHH_order$rank<-c(seq(1, nrow(bo_CHH_order), by=1))
-  
+
   print(paste("Precision Adjusted CG DMR score of:", round(boot_out$CG_Score,3)[1], " For a CG bootstrap p-value of: ", (bo_CG_order[bo_CG_order$Target==1,]$rank)/nrow(bo_CG_order)))
   print(paste("Precision Adjusted CHG DMR score of:", round(boot_out$CHG_Score,3)[1], " For a CHG bootstrap p-value of: ", (bo_CHG_order[bo_CHG_order$Target==1,]$rank)/nrow(bo_CHG_order)))
   print(paste("Precision Adjusted CHH DMR score of:", round(boot_out$CHH_Score,3)[1], " For a CHH bootstrap p-value of: ", (bo_CHH_order[bo_CHH_order$Target==1,]$rank)/nrow(bo_CHH_order)))
-  
+
   print(rbind(target_rs[target_rs$adjusted_soundscore==boot_out$CG_Score[1],], target_rs[target_rs$adjusted_soundscore==boot_out$CHG_Score[1],], target_rs[target_rs$adjusted_soundscore==boot_out$CHH_Score[1],]))
-  
+
   print(paste("Final Bootstrap Adjusted CG DMR Score:", round(bo_CG[1,2]*((bo_CG[1,2]-mean(bo_CG[-1,2]))/sd(bo_CG[,2])),2)))
   print(paste("Final Bootstrap Adjusted CHG DMR Score:", round(bo_CHG[1,3]*((bo_CHG[1,3]-mean(bo_CHG[-1,3]))/sd(bo_CHG[,3])),2)))
   print(paste("Final Bootstrap Adjusted CHH DMR Score:", round(bo_CHH[1,4]*((bo_CHH[1,4]-mean(bo_CHH[-1,4]))/sd(bo_CHH[,4])),2)))
@@ -1586,10 +1584,10 @@ boot_score<-function(sound_score_obj = NA, target_gene= NA, target_start=-1000, 
   print(paste("2-3: Moderate methylation shifts near oligo treatment"))
   print(paste("3-5: Significant methylation shifts near oligo treatment"))
   print(paste("5+: Very Strong evidencce of DMR associated with oligo treatment"))
-  
-  
-  list(boot_out, target_rs)->Boot_Obj
+
+
+  Boot_Obj <- list(boot_out, target_rs)
   names(Boot_Obj) <- c("bootstrap_scores", "target_rs")
   return(Boot_Obj)
-  
+
 }
