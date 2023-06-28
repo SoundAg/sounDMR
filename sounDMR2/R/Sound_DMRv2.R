@@ -350,7 +350,7 @@ create_methyl_summary <- function(dmr_obj, control = 'C', treated = 'T',
                                            function_name = tuple[[1]])
       GenePercentX <- GenePercentX %>% select(-c(Gene, Zeroth_pos))
       colnames(GenePercentX) = paste0(colnames(GenePercentX), '_',
-                                      as.character(substitute(tuple[[1]]))
+                                      as.character(substitute(tuple[[1]])))
       Output_Frame <- cbind(Output_Frame, GenePercentX)
     }
   }
