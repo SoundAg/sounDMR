@@ -347,10 +347,10 @@ create_methyl_summary <- function(dmr_obj, control = 'C', treated = 'T',
   if (length(additional_summary_cols) != 0) {
     for (tuple in additional_summary_cols) {
       GenePercentX = create_gene_percent_x(dmr_obj$LongPercent, x = tuple[[2]],
-                                           function_name = tuple[[1]])
+                                           function_name = get(tuple[[1]]))
       GenePercentX <- GenePercentX %>% select(-c(Gene, Zeroth_pos))
       colnames(GenePercentX) = paste0(colnames(GenePercentX), '_',
-                                      as.character(substitute(tuple[[1]])))
+                                      tuple[[1]])
       Output_Frame <- cbind(Output_Frame, GenePercentX)
     }
   }
@@ -1390,11 +1390,11 @@ generate_zoomframe <- function(gene_cord_df, MFrame, Gene_col, filter_NAs=0, tar
 #' @param gene_info (str) - This takes in a boolean variable. If the gene info- coordinates, gene name etc are present then make sure to have the gene-cordinates.csv file in the right format (as shown in the sample data on github).
 #' @param gene_cordinate_file (str) - File containing gene-coordinate info. It is important to be in a specific format and should have but not limited to the following columns : Chromosome | Gene_Name | Low | High | Adapt_Low | Adapt_High
 #' Low and High : These are Start and Stop cordinates of the gene. Low is always the lower coordinate which could be start for the positive stranded gene and stop for the negative stranded gene and vice versa.
-#'Adapt_Low and Adapt_High : Cordinates for adaptive regions around the Lower and Higher co-ordinate of the gene respectively
+#' Adapt_Low and Adapt_High : Cordinates for adaptive regions around the Lower and Higher co-ordinate of the gene respectively
 #' @param File_prefix (Flexible str) - This is to add a prefix to all the files that get exported and saved to the working directory while running the function.
-#' @return Megaframe(df) or Zoomframe(df) - Clean data frame containing combined methyl bed information for every individual in the experiment.
 #' @inheritParams generate_megaframe
 #' @inheritParams generate_zoomframe
+#' @return Megaframe(df) or Zoomframe(df) - Clean data frame containing combined methyl bed information for every individual in the experiment.
 #' @import tidyverse
 #' @examples
 #' Basic usage for methyl_call_type

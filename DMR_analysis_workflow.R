@@ -26,7 +26,7 @@ All_methyl_beds <- list.files(path=".",pattern="*methyl.bed")
 #If gene_info is false in the below parameter then this returns a megaframe and if True it returns the zoomframe
 Methylframe <- generate_methylframe(methyl_bed_list=All_methyl_beds, Sample_count = 0, 
                                   Methyl_call_type="Dorado", filter_NAs = 0,
-                                  gene_info = FALSE, gene_coordinate_file = Geneco, Gene_column='Gene_name',
+                                  gene_info = FALSE, gene_coordinate_file = Geneco, Gene_column='Gene_Name',
                                   target_info=FALSE, 
                                   File_prefix="Sample")
 
@@ -50,7 +50,7 @@ dmr_obj <- create_dmr_obj(Methylframe, experimental_design_df)
 #-----------------------------------------------
 
 methyl_summary <- create_methyl_summary(dmr_obj, control = 'C', treated = 'T',
-                                        additional_summary_cols = list(c(sd, 'Group')))
+                                        additional_summary_cols = list(c('sd', 'Group')))
 
 # Option to subset methyl_summary
 individuals_of_interest = unique(dmr_obj$experimental_design_df$Individual)
