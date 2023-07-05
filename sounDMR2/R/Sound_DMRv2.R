@@ -1152,7 +1152,7 @@ get_standard_methyl_bed <-function(Methyl_bed="Methyl.bed", Sample_ID = "S1", Me
 
 
 
-generate_megaframe <- function(methyl_bed_list="All_methyl_beds", Sample_count = 0, Methyl_call_type="Dorado",  File_prefix=""){
+generate_megaframe <- function(methyl_bed_list=All_methyl_beds, Sample_count = 0, Methyl_call_type="Dorado",  File_prefix=""){
 
   #QC
     QC <- missing(methyl_bed_list)
@@ -1247,7 +1247,7 @@ generate_megaframe <- function(methyl_bed_list="All_methyl_beds", Sample_count =
   QCplot <- suppressMessages(ggplot(Megaframe, aes(x=NAs/3))+geom_histogram(bins=30) +
                                labs(title = "Missing data per cytosine") +
                                xlab("Individual") +
-                               ylab("Count of rows with missing data"))
+                               ylab("Count of rows with missing data")) + theme_bw()
 
   print(QCplot)
 
@@ -1317,10 +1317,7 @@ add_zoom_coords <- function(target, gene_cord_df, geneco_index, gcoord_exist=TRU
 #' @import stringr
 #' @export
 
-generate_zoomframe <- function(gene_cord_df, MFrame, Gene_col, filter_NAs=0, target_info=TRUE, gene_list=gene_cord_df[[Gene_col]], File_prefix="") {
-
-  #set the filter based on how stringent it needs to be based on the plot
-  MFrame <- MFrame[MFrame$NAs<=(filter_NAs*3),]
+generate_zoomframe <- function(gene_cord_df, MFrame, Gene_col, target_info=TRUE, gene_list=gene_cord_df[[Gene_col]], File_prefix="") {
 
 
   cat("Creating the ZoomFrame! \n")
@@ -1420,16 +1417,21 @@ generate_methylframe <-function(methyl_bed_list=All_methyl_beds, Sample_count = 
     stop("gene_info is TRUE. Please provide gene-coordinates file, additional values such as Gene_column and re-run the function. Look into documentation for additional information \n")
   }
 
+  if (gene_info==TRUE & target_info==FALSE ) {
+    stop("gene_info is TRUE, this means the target_info also needs to be TRUE. \n")
+  }
 
   Megaframe <- generate_megaframe(methyl_bed_list=methyl_bed_list, Sample_count = 0,
                                     Methyl_call_type=Methyl_call_type,  File_prefix="Sample")
+  
+  cat('\n NOTE: Filtering NAs default is set to 0, See documentation for ideas on how to use the filter, change the parameter and try again \n')
+  
+  Megaframe <- Megaframe[Megaframe$NAs<=(filter_NAs*3),]
 
   if (gene_info==TRUE) {
-    cat('\n Filtering NAs default is set to 0, See documentation for ideas on how to use the filter \n \n')
-
 
     Zoomframe <- generate_zoomframe(gene_cord_df=gene_coordinate_file, MFrame = Megaframe,
-                                    Gene_col=Gene_column, filter_NAs=filter_NAs,
+                                    Gene_col=Gene_column,
                                     target_info=FALSE, gene_list=gene_list ,
                                     File_prefix=File_prefix)
 

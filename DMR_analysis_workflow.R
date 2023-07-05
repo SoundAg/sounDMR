@@ -9,7 +9,7 @@ library(sounDMR2)
 #It is necessary for the gene coordinates file to be in the below format to ensure the code works.  
 #Chromosome | Low   | High  | Gene_name	| Strand    | Gene_length   | Adapt_Low | Adapt_High
 
-Geneco <- read.table(file.choose(), header=TRUE, sep=",")
+Geneco <- read.table(file.choose(), header=TRUE, sep="\t")
 
 
 #-------------------------
@@ -26,7 +26,7 @@ All_methyl_beds <- list.files(path=".",pattern="*methyl.bed")
 #If gene_info is false in the below parameter then this returns a megaframe and if True it returns the zoomframe
 Methylframe <- generate_methylframe(methyl_bed_list=All_methyl_beds, Sample_count = 0, 
                                   Methyl_call_type="Dorado", filter_NAs = 0,
-                                  gene_info = FALSE, gene_coordinate_file = Geneco, Gene_column='Gene_name',
+                                  gene_info = FALSE, gene_coordinate_file = NA, Gene_column=NA,
                                   target_info=FALSE, 
                                   File_prefix="Sample")
 
