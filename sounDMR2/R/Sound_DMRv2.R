@@ -1424,7 +1424,7 @@ generate_methylframe <-function(methyl_bed_list=All_methyl_beds, Sample_count = 
   Megaframe <- generate_megaframe(methyl_bed_list=methyl_bed_list, Sample_count = 0,
                                     Methyl_call_type=Methyl_call_type,  File_prefix="Sample")
   
-  cat('\n NOTE: Filtering NAs default is set to 0, See documentation for ideas on how to use the filter, change the parameter and try again \n')
+  cat('\n NOTE: Filtering NAs default is set to 0, See documentation for ideas on how to use the filter \n')
   
   Megaframe <- Megaframe[Megaframe$NAs<=(filter_NAs*3),]
 
