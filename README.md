@@ -84,7 +84,7 @@ Gene : This can inclkude either Gene Id or Gene names for tracking during DMR an
 Zoom_co : This keeps track of whether the given position is within the gene or is an adaptive region.
 
 Zoomframe is only created if and when the Geneco file is provided. Geneco file should include the following columns at the bare minimum : 
-Gene_Name | Chromosome | Low | High | Gene_length | Strand | Adapt_Low | Adapt_High
+Gene_Name | Chromosome | Low | High | Gene_length | Strand | Adapt_Low | Adapt_High .
 Low and High refer to gene body coordinates in the 5'to 3' direction and Adapt_Low and Adapt_High refers to the coordinates for adaptive region around the gene. 
 
 ```
