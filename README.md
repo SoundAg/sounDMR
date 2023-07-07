@@ -124,11 +124,12 @@ the read depth for an individual. There is an optional `additional_summary_cols`
 parameter that will allow us to include additional columns given a summary
 statistic function such as `mean`, `sd`, or `var` and the name of the column on 
 which to run the summary statistics. Multiple tuples can be added into this
-list to create additional summary columns. 
+list to create additional summary columns. Note: the function name must be 
+a string.
 
 ```
 methyl_summary <- create_methyl_summary(dmr_obj, control = 'C', treated = 'T',
-                                        additional_summary_cols = list(c(sd, 'Group')))
+                                        additional_summary_cols = list(c('sd', 'Group')))
 
 # Option to subset methyl_summary
 individuals_of_interest = unique(dmr_obj$experimental_design_df$Individual)
