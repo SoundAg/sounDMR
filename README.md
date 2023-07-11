@@ -181,17 +181,34 @@ methyl_summary_cg <- changepoint_analysis(methyl_summary, CG_penalty = 9,
 ```
 
 #### Sound score
-This function takes in the data from the previous step that includes changepoint regions based on a specific test statistic of interest and then creates an aggregated changepoint region file that includes summary statistics for each region. A "sound score" is then computed to get a measure of the strength of a Differentially Methylated Region(DMR) within that region.
+This function takes in the data from the previous step that includes changepoint regions based on a specific test statistic of interest and then creates an aggregated changepoint region file that includes summary statistics for each region. A "sound score" is then computed to get a measure of the strength of a Differentially Methylated Region(DMR) within that region. The two Soundscores produced by default are the dmr_score, and dmr_score2.  These are as follows:
+
+dmr_score<-(((Count)^(1/3))*(abs(MethRegion_Z)*abs(RegionStatsPer_Change))^(1/2))
+  
+dmr_score2<-((Count)^(1/3))*(abs(MethRegion_Z)*abs(asin(sqrt(Per_Change/100+Control/100))-asin(sqrt(Control/100)))^(1/2))
+  
+
+Additionally, there is an option for the user to specify their own custom founction to use for a DMR_score:
+
+This can be entered as:
+
+UserFunction=(Ag_Groups$Count)^(1/3))
+
+Note, that this function takes columns present in methylsummary file, and should be called with "Ag_Groups".
+
+Additionally, this function  will produce a plot showing the distribution of dmrscores relative to the percentile.
 
 ```
 DMR_score <- sound_score(changepoint_OF = methyl_summary_cg, 
                          Statistic = changepoint_cols[1], 
-                         Per_Change = "Treat_V_Control", CF = T,
+                         Per_Change = "Treat_V_Control", CF = F,
                          other_columns=c("Control", "Estimate_GroupT_small"),
                          UserFunction = NA)
 ```
 #### Boot score
-This function takes in the data from the sound_score function to compare target region against other regions of the genome by performing a series of bootstraps with respect to the target. 
+Note: This function was designed to test an a priori hypothesis about what area of the genome might show differential methylation.  The user can enter in this target region, and the bootscore compares differential methylation around that region with other areas in the genome.
+
+This function takes in the data from the sound_score function, the gene of interest, and the region of interest around it relative to the ATG (start and stop).  
 Regions that are >10kb away from the target are given a score of 0 by default. The function also computes a bootstrap p-value to provide a statistical basis for the score.
 
 ```
