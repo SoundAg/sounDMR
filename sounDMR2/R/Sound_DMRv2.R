@@ -1429,7 +1429,6 @@ generate_methylframe <-function(methyl_bed_list=All_methyl_beds, Sample_count = 
   Megaframe <- Megaframe[Megaframe$NAs<=(filter_NAs*3),]
 
   if (gene_info==TRUE) {
-
     Zoomframe <- generate_zoomframe(gene_cord_df=gene_coordinate_file, MFrame = Megaframe,
                                     Gene_col=Gene_column,
                                     target_info=FALSE, gene_list=gene_list ,
@@ -1438,17 +1437,12 @@ generate_methylframe <-function(methyl_bed_list=All_methyl_beds, Sample_count = 
     return(Zoomframe)
   }
   else {
-
     #Duplicating the column for downstream analysis since the functions look for a Zeroth_pos column
     Megaframe$Zeroth_pos <- Megaframe$Position
 
     return(Megaframe)
-
   }
-
 }
-
-
 
 
 #' Boot_score
