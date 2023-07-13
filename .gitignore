@@ -1,6 +1,7 @@
 *.*
 !*.R
 !*.Rmd
+!*.Rd
 !*.tar.gz
 !*.md
 !*.csv
