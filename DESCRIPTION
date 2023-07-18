@@ -24,4 +24,5 @@ Depends:
 	stringr,
 	tibble,
 	tidyr,
-	tidyverse,
+	tidyverse
+URL: https://github.com/SoundAg/sounDMR
