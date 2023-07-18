@@ -24,9 +24,9 @@ in the model
 }
 \examples{
 # Create formula of independent and random effects
-> create_formula(fixed = c('Group'), random = c('Individual'))
-[1] "cbind(Meth, UnMeth) ~ Group + (1 | Individual)"
+create_formula(fixed = c('Group'), random = c('Individual'))
+# [1] "cbind(Meth, UnMeth) ~ Group + (1 | Individual)"
 
-> create_formula(fixed = c('Group', 'Individual'), random = c('Plant * Gene'))
-[1] "cbind(Meth, UnMeth) ~ Group + Individual + (1 | Plant * Gene)"
+create_formula(fixed = c('Group', 'Individual'), random = c('Plant * Gene'))
+# [1] "cbind(Meth, UnMeth) ~ Group + Individual + (1 | Plant * Gene)"
 }

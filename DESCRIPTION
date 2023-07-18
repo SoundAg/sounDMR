@@ -1,6 +1,6 @@
 Package: sounDMR
 Title: DMR analysis from ONT data
-Version: 1.2.2
+Version: 2.0.0
 Authors@R: c(
     person("Tom", "Cairns", email = "t.cairns@sound.ag", role = c("aut", "cre")),
     person("Jack", "Colicchio", email = "j.colicchio@sound.ag", role = "aut"),
@@ -16,8 +16,13 @@ Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.3
 Depends:
 	changepoint,
+	ggplot2,
 	Formula,
+	glmmTMB,
 	lme4,
 	reshape2,
+	stringr,
+	tibble,
+	tidyr,
 	tidyverse,
-	glmmTMB
+	

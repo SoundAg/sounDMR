@@ -19,10 +19,10 @@ into \code{create_function()}
 }
 \examples{
 # create multiple independent fixed effects
-> create_fixed_effects(c('Group', 'Individual'))
-[1] "Group + Individual"
+create_fixed_effects(c('Group', 'Individual'))
+# [1] "Group + Individual"
 
 # Create fixed effects with interactions
-> create_fixed_effects(c('Group * Individual'))
-[1] "Group * Individual"
+create_fixed_effects(c('Group * Individual'))
+# [1] "Group * Individual"
 }

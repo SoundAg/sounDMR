@@ -402,12 +402,12 @@ subset_methyl_summary <- function(methyl_summary, individuals_to_keep) {
 #' to be passed into `create_function()`
 #' @examples
 #' # create multiple independent fixed effects
-#' > create_fixed_effects(c('Group', 'Individual'))
-#' [1] "Group + Individual"
+#' create_fixed_effects(c('Group', 'Individual'))
+#' # [1] "Group + Individual"
 #'
 #' # Create fixed effects with interactions
-#' > create_fixed_effects(c('Group * Individual'))
-#' [1] "Group * Individual"
+#' create_fixed_effects(c('Group * Individual'))
+#' # [1] "Group * Individual"
 #' @export
 
 create_fixed_effects <- function(fixed = c('effect1', 'effect2')) {
@@ -433,12 +433,12 @@ create_fixed_effects <- function(fixed = c('effect1', 'effect2')) {
 #' @return random_effects (str) - the random effects properly formatted
 #' @examples
 #' # Create independent random effects
-#' > create_random_effects(c("Group", "Individual"))
-#' [1] "(1 | Group) + (1 | Individual)"
+#' create_random_effects(c("Group", "Individual"))
+#' # [1] "(1 | Group) + (1 | Individual)"
 #'
 #' # Create random effects with an interaction
-#' > create_random_effects(c("Group * Individual"))
-#' [1] "(1 | Group * Individual)"
+#' create_random_effects(c("Group * Individual"))
+#' # [1] "(1 | Group * Individual)"
 #'
 #' @export
 
@@ -470,11 +470,11 @@ create_random_effects <- function(random = c('Group', 'ID')) {
 #' @return effects_formula (formula) - a formula of the mixed effects
 #' @examples
 #' # Create formula of independent and random effects
-#' > create_formula(fixed = c('Group'), random = c('Individual'))
-#' [1] "cbind(Meth, UnMeth) ~ Group + (1 | Individual)"
+#' create_formula(fixed = c('Group'), random = c('Individual'))
+#' # [1] "cbind(Meth, UnMeth) ~ Group + (1 | Individual)"
 #'
-#' > create_formula(fixed = c('Group', 'Individual'), random = c('Plant * Gene'))
-#' [1] "cbind(Meth, UnMeth) ~ Group + Individual + (1 | Plant * Gene)"
+#' create_formula(fixed = c('Group', 'Individual'), random = c('Plant * Gene'))
+#' # [1] "cbind(Meth, UnMeth) ~ Group + Individual + (1 | Plant * Gene)"
 #' @import stats
 #' @export
 
@@ -1159,9 +1159,9 @@ get_standard_methyl_bed <-function(Methyl_bed="Methyl.bed", Sample_ID = "S1", Me
 #' @import stringr
 #' @examples
 #' # Basic usage for methyl_call_type
-#' > generate_megaframe(Methyl_call_type="DSP") OR
-#' > get_standard_methyl_bed(Methyl_call_type="Megalodon") OR
-#' > get_standard_methyl_bed(Methyl_call_type="Bonito")
+#' # generate_megaframe(Methyl_call_type="DSP") # OR
+#' # get_standard_methyl_bed(Methyl_call_type="Megalodon") # OR
+#' # get_standard_methyl_bed(Methyl_call_type="Bonito")
 #' @export
 
 
@@ -1408,11 +1408,11 @@ generate_zoomframe <- function(gene_cord_df, MFrame, Gene_col, target_info=TRUE,
 #' @return Megaframe(df) or Zoomframe(df) - Clean data frame containing combined methyl bed information for every individual in the experiment.
 #' @import tidyverse
 #' @examples
-#' Basic usage for methyl_call_type
-#' 1. With gene coordinate file
-#' generate_methylframe(methyl_bed_list= <list_of_BedMethyl files>, gene_info = TRUE, gene_cordinate_file = <File with gene info>, Gene_col=<Gene Name/Gene ID>, target_info=TRUE, gene_list = <list of target genes>)
-#' 2. Without gene cooridnate file
-#' generate_methylframe(methyl_bed_list= <list_of_BedMethyl files>, gene_info = FALSE )
+#' # Basic usage for methyl_call_type
+#' # 1. With gene coordinate file
+#' # generate_methylframe(methyl_bed_list= <list_of_BedMethyl files>, gene_info = TRUE, gene_cordinate_file = <File with gene info>, Gene_col=<Gene Name/Gene ID>, target_info=TRUE, gene_list = <list of target genes>)
+#' # 2. Without gene cooridnate file
+#' # generate_methylframe(methyl_bed_list= <list_of_BedMethyl files>, gene_info = FALSE )
 #' @export
 
 generate_methylframe <-function(methyl_bed_list=All_methyl_beds, Sample_count = 0,

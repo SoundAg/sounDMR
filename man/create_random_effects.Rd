@@ -18,11 +18,11 @@ Create a string combining the list of random effects to be passed into the
 }
 \examples{
 # Create independent random effects
-> create_random_effects(c("Group", "Individual"))
-[1] "(1 | Group) + (1 | Individual)"
+create_random_effects(c("Group", "Individual"))
+# [1] "(1 | Group) + (1 | Individual)"
 
 # Create random effects with an interaction
-> create_random_effects(c("Group * Individual"))
-[1] "(1 | Group * Individual)"
+create_random_effects(c("Group * Individual"))
+# [1] "(1 | Group * Individual)"
 
 }

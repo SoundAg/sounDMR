@@ -30,7 +30,7 @@ This function only works with bedfiles output from only either of the three meth
 }
 \examples{
 # Basic usage for methyl_call_type
-> generate_megaframe(Methyl_call_type="DSP") OR
-> get_standard_methyl_bed(Methyl_call_type="Megalodon") OR
-> get_standard_methyl_bed(Methyl_call_type="Bonito")
+# generate_megaframe(Methyl_call_type="DSP") # OR
+# get_standard_methyl_bed(Methyl_call_type="Megalodon") # OR
+# get_standard_methyl_bed(Methyl_call_type="Bonito")
 }
