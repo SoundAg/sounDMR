@@ -13,17 +13,17 @@ More information on bedtools intersect can be found [here](https://bedtools.read
 
 
 ## Installation
-Make sure you have access to the latest version of the package and go through the installation steps below. This can be done either by downloading the tar file from our [github](https://github.com/SoundAg/DMR_analysis) page or by cloning it in your local environment.
-This only needs to be done once.
-
-<div class=".pkgdown-release">
+Make sure you have access to the latest version of the package and go through the installation steps
+below. This can be done either by downloading the `tar.gz` file from
+[github](https://github.com/SoundAg/sounDMR) or by cloning the project and moving to your local
+environment or by installing directly from github via devtools. This only needs to be done once.
 
 ``` r
-# Install from CRAN
-install.packages("sounDMR")
+# Install directly from github
+install.packages("devtools")
+library(devtools)
+install_github("SoundAg/sounDMR")
 ```
-
-</div>
 
 ## Usage
 `library(soundDMR)` will load the core packages:
