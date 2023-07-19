@@ -1,23 +1,28 @@
 Package: sounDMR
 Title: DMR analysis from ONT data
-Version: 1.2.2
+Version: 2.0.0
 Authors@R: c(
     person("Tom", "Cairns", email = "t.cairns@sound.ag", role = c("aut", "cre")),
     person("Jack", "Colicchio", email = "j.colicchio@sound.ag", role = "aut"),
     person("Michael", "Flashman", email = "m.flashman@sound.ag", role = "aut"),
-    person("Keerthana", "Prabhu", email = "k.prabhu@sound.ag", role = "aut")) 
+    person("Keerthana", "Prabhu", email = "k.prabhu@sound.ag", role = "aut"))
 Description: This package provides robust functions for DMR analysis. It takes in a megaframe,
              cleans with the help of the programmer, then runs the random effects model for a
              givenformula, and finally identifies the changepoints in the Z score of interest from
              the random effects model.
-License: `use_proprietary_license()`
+License: Apache License (>= 2)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.3
-Depends: 
+Depends:
 	changepoint,
+	ggplot2,
 	Formula,
+	glmmTMB,
 	lme4,
 	reshape2,
-	tidyverse,
-	glmmTMB
+	stringr,
+	tibble,
+	tidyr,
+	tidyverse
+URL: https://github.com/SoundAg/sounDMR

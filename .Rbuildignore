@@ -1,0 +1,5 @@
+^.*\.Rproj$
+^\.Rproj\.user$
+^.*\.tar\.gz$
+^LICENSE\.md$
+^LICENSE$

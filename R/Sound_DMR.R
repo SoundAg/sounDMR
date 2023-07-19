@@ -1,3 +1,17 @@
+# Copyright 2023 Sound Agriculture Company
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 #' Create Gene Percent Data Frames
 #'
 #' A function to create different subsets of the LongPercent df depending on the
@@ -388,12 +402,12 @@ subset_methyl_summary <- function(methyl_summary, individuals_to_keep) {
 #' to be passed into `create_function()`
 #' @examples
 #' # create multiple independent fixed effects
-#' > create_fixed_effects(c('Group', 'Individual'))
-#' [1] "Group + Individual"
+#' create_fixed_effects(c('Group', 'Individual'))
+#' # [1] "Group + Individual"
 #'
 #' # Create fixed effects with interactions
-#' > create_fixed_effects(c('Group * Individual'))
-#' [1] "Group * Individual"
+#' create_fixed_effects(c('Group * Individual'))
+#' # [1] "Group * Individual"
 #' @export
 
 create_fixed_effects <- function(fixed = c('effect1', 'effect2')) {
@@ -419,12 +433,12 @@ create_fixed_effects <- function(fixed = c('effect1', 'effect2')) {
 #' @return random_effects (str) - the random effects properly formatted
 #' @examples
 #' # Create independent random effects
-#' > create_random_effects(c("Group", "Individual"))
-#' [1] "(1 | Group) + (1 | Individual)"
+#' create_random_effects(c("Group", "Individual"))
+#' # [1] "(1 | Group) + (1 | Individual)"
 #'
 #' # Create random effects with an interaction
-#' > create_random_effects(c("Group * Individual"))
-#' [1] "(1 | Group * Individual)"
+#' create_random_effects(c("Group * Individual"))
+#' # [1] "(1 | Group * Individual)"
 #'
 #' @export
 
@@ -456,11 +470,11 @@ create_random_effects <- function(random = c('Group', 'ID')) {
 #' @return effects_formula (formula) - a formula of the mixed effects
 #' @examples
 #' # Create formula of independent and random effects
-#' > create_formula(fixed = c('Group'), random = c('Individual'))
-#' [1] "cbind(Meth, UnMeth) ~ Group + (1 | Individual)"
+#' create_formula(fixed = c('Group'), random = c('Individual'))
+#' # [1] "cbind(Meth, UnMeth) ~ Group + (1 | Individual)"
 #'
-#' > create_formula(fixed = c('Group', 'Individual'), random = c('Plant * Gene'))
-#' [1] "cbind(Meth, UnMeth) ~ Group + Individual + (1 | Plant * Gene)"
+#' create_formula(fixed = c('Group', 'Individual'), random = c('Plant * Gene'))
+#' # [1] "cbind(Meth, UnMeth) ~ Group + Individual + (1 | Plant * Gene)"
 #' @import stats
 #' @export
 
@@ -1145,9 +1159,9 @@ get_standard_methyl_bed <-function(Methyl_bed="Methyl.bed", Sample_ID = "S1", Me
 #' @import stringr
 #' @examples
 #' # Basic usage for methyl_call_type
-#' > generate_megaframe(Methyl_call_type="DSP") OR
-#' > get_standard_methyl_bed(Methyl_call_type="Megalodon") OR
-#' > get_standard_methyl_bed(Methyl_call_type="Bonito")
+#' # generate_megaframe(Methyl_call_type="DSP") # OR
+#' # get_standard_methyl_bed(Methyl_call_type="Megalodon") # OR
+#' # get_standard_methyl_bed(Methyl_call_type="Bonito")
 #' @export
 
 
@@ -1394,11 +1408,11 @@ generate_zoomframe <- function(gene_cord_df, MFrame, Gene_col, target_info=TRUE,
 #' @return Megaframe(df) or Zoomframe(df) - Clean data frame containing combined methyl bed information for every individual in the experiment.
 #' @import tidyverse
 #' @examples
-#' Basic usage for methyl_call_type
-#' 1. With gene coordinate file
-#' generate_methylframe(methyl_bed_list= <list_of_BedMethyl files>, gene_info = TRUE, gene_cordinate_file = <File with gene info>, Gene_col=<Gene Name/Gene ID>, target_info=TRUE, gene_list = <list of target genes>)
-#' 2. Without gene cooridnate file
-#' generate_methylframe(methyl_bed_list= <list_of_BedMethyl files>, gene_info = FALSE )
+#' # Basic usage for methyl_call_type
+#' # 1. With gene coordinate file
+#' # generate_methylframe(methyl_bed_list= <list_of_BedMethyl files>, gene_info = TRUE, gene_cordinate_file = <File with gene info>, Gene_col=<Gene Name/Gene ID>, target_info=TRUE, gene_list = <list of target genes>)
+#' # 2. Without gene cooridnate file
+#' # generate_methylframe(methyl_bed_list= <list_of_BedMethyl files>, gene_info = FALSE )
 #' @export
 
 generate_methylframe <-function(methyl_bed_list=All_methyl_beds, Sample_count = 0,
@@ -1423,9 +1437,9 @@ generate_methylframe <-function(methyl_bed_list=All_methyl_beds, Sample_count = 
 
   Megaframe <- generate_megaframe(methyl_bed_list=methyl_bed_list, Sample_count = 0,
                                     Methyl_call_type=Methyl_call_type,  File_prefix="Sample")
-  
+
   cat('\n NOTE: Filtering NAs default is set to 0, See documentation for ideas on how to use the filter \n')
-  
+
   Megaframe <- Megaframe[Megaframe$NAs<=(filter_NAs*3),]
 
   if (gene_info==TRUE) {
@@ -1470,33 +1484,33 @@ boot_score<-function(sound_score_obj = NA, target_gene= NA, target_start=-1000, 
   rs<-sound_score_obj$region_summary
   ms<-sound_score_obj$methyl_summary
   target_rs<-rs[rs$Gene==target_gene,]
-  
+
   #create data frame to be filled with results of bootstrapping
   boot_out <- data.frame(matrix(ncol = 5, nrow = nboots+1))
-  
+
   #provide column names
   colnames(boot_out) <- c('Gene', 'CG_Score', 'CHG_Score', "CHH_Score", 'Target')
-  
+
   #Calculate precision adjusted score for each change point region
   target_rs <- target_rs %>%
     group_by(cp_group) %>%
     mutate(distance_from_target= min(c(abs(Start-target_start), abs(Start-target_end),abs(Stop-target_start), abs(Stop-target_end))),
            distance_from_target=ifelse(Start<=target_start & Stop >= target_end | Start>=target_start & Stop <= target_end , 0, distance_from_target),
            adjusted_soundscore= ifelse(distance_from_target>10000,0,(1-(0.0001*distance_from_target))*!!as.name(scoring_col_name)))
-  
+
   if(direction_DMR=="negative"){
     target_rs$adjusted_soundscore<-target_rs$adjusted_soundscore*(-1)
   }
-  
+
   if(direction_DMR=="absolute"){
     target_rs$adjusted_soundscore<-abs(target_rs$adjusted_soundscore)
   }
-  
+
   #Find strongest DMR around target gene
   boot_out$CG_Score[1]<-max(target_rs$adjusted_soundscore[target_rs$CX=="CG"])
   boot_out$CHG_Score[1]<-max(target_rs$adjusted_soundscore[target_rs$CX=="CHG"])
   boot_out$CHH_Score[1]<-max(target_rs$adjusted_soundscore[target_rs$CX=="CHH"])
-  
+
   # Write info to Boot_Object
   boot_out$Target[1]<- 1
   boot_out$Gene[1]<-target_gene
@@ -1506,15 +1520,15 @@ boot_score<-function(sound_score_obj = NA, target_gene= NA, target_start=-1000, 
   boot_out$Stop_CHG[1]<-target_rs$Stop[target_rs$adjusted_soundscore==max(target_rs$adjusted_soundscore[target_rs$CX=="CHG"]) & target_rs$CX=="CHG"]
   boot_out$Start_CHH[1]<-target_rs$Start[target_rs$adjusted_soundscore==max(target_rs$adjusted_soundscore[target_rs$CX=="CHH"]) & target_rs$CX=="CHH"]
   boot_out$Stop_CHH[1]<-target_rs$Stop[target_rs$adjusted_soundscore==max(target_rs$adjusted_soundscore[target_rs$CX=="CHH"]) & target_rs$CX=="CHH"]
-  
+
   # Make non-target frame
   nontarget_ms<-ms[ms$Gene!=target_gene,]
-  
+
   # Create lookup table with info for each gene
   nontarget_region_lookup <- nontarget_ms %>%
     group_by(Gene) %>%
     summarise(Start=min(Zeroth_pos), Stop=max(Zeroth_pos))
-  
+
   # Determine if gene is far enough from end of contig to be used for bootstrapping
   nontarget_ms$far_enough<-FALSE
   for(i in 1:nrow(nontarget_region_lookup)){
@@ -1522,10 +1536,10 @@ boot_score<-function(sound_score_obj = NA, target_gene= NA, target_start=-1000, 
   }
   #subset to only include these rows
   nontarget_ms_good_distance<-nontarget_ms[nontarget_ms$far_enough==TRUE,]
-  
+
   # sample from rows
   boot_positions<-sample_n(nontarget_ms_good_distance, nboots, replace=TRUE)
-  
+
   # run bootstrapping
   for(i in 1:nrow(boot_positions)){
     boot_rs <- rs[rs$Gene==boot_positions$Gene[i],]
@@ -1536,18 +1550,18 @@ boot_score<-function(sound_score_obj = NA, target_gene= NA, target_start=-1000, 
       mutate(distance_from_target= min(c(abs(Start-target_start), abs(Start-target_end),abs(Stop-target_start), abs(Stop-target_end))),
              distance_from_target=ifelse(Start<=target_start & Stop >= target_end | Start>=target_start & Stop <= target_end , 0, distance_from_target),
              adjusted_soundscore= ifelse(distance_from_target>10000,0,(1-(0.0001*distance_from_target))*!!as.name(scoring_col_name )))
-    
+
     # Write info to Boot_Object
-    
+
     if(direction_DMR=="negative"){
       boot_rs$adjusted_soundscore<-boot_rs$adjusted_soundscore*(-1)
     }
-    
+
     if(direction_DMR=="absolute"){
       boot_rs$adjusted_soundscore<-abs(boot_rs$adjusted_soundscore)
     }
-    
-    
+
+
     boot_out$CG_Score[i+1]<-max(boot_rs$adjusted_soundscore[boot_rs$CX=="CG"])
     boot_out$CHG_Score[i+1]<-max(boot_rs$adjusted_soundscore[boot_rs$CX=="CHG"])
     boot_out$CHH_Score[i+1]<-max(boot_rs$adjusted_soundscore[boot_rs$CX=="CHH"])
@@ -1559,27 +1573,27 @@ boot_score<-function(sound_score_obj = NA, target_gene= NA, target_start=-1000, 
     boot_out$Stop_CHG[i+1]<-boot_rs$Stop[boot_rs$adjusted_soundscore==max(boot_rs$adjusted_soundscore[boot_rs$CX=="CHG"]) & boot_rs$CX=="CHG"][1]
     boot_out$Start_CHH[i+1]<-boot_rs$Start[boot_rs$adjusted_soundscore==max(boot_rs$adjusted_soundscore[boot_rs$CX=="CHH"]) & boot_rs$CX=="CHH"][1]
     boot_out$Stop_CHH[i+1]<-boot_rs$Stop[boot_rs$adjusted_soundscore==max(boot_rs$adjusted_soundscore[boot_rs$CX=="CHH"]) & boot_rs$CX=="CHH"][1]
-    
+
   }
-  
+
   bo_CG <- boot_out[!duplicated(boot_out[c(1,2)]),]
   bo_CHG <- boot_out[!duplicated(boot_out[c(1,3)]),]
   bo_CHH <- boot_out[!duplicated(boot_out[c(1,4)]),]
-  
+
   bo_CG_order <- bo_CG[order(-bo_CG$CG_Score),]
   bo_CHG_order <- bo_CHG[order(-bo_CHG$CHG_Score),]
   bo_CHH_order <- bo_CHH[order(-bo_CHH$CHH_Score),]
-  
+
   bo_CG_order$rank<-c(seq(1, nrow(bo_CG_order), by=1))
   bo_CHG_order$rank<-c(seq(1, nrow(bo_CHG_order), by=1))
   bo_CHH_order$rank<-c(seq(1, nrow(bo_CHH_order), by=1))
-  
+
   print(paste("Precision Adjusted CG DMR score of:", round(boot_out$CG_Score,3)[1], " For a CG bootstrap p-value of: ", (bo_CG_order[bo_CG_order$Target==1,]$rank)/nrow(bo_CG_order)))
   print(paste("Precision Adjusted CHG DMR score of:", round(boot_out$CHG_Score,3)[1], " For a CHG bootstrap p-value of: ", (bo_CHG_order[bo_CHG_order$Target==1,]$rank)/nrow(bo_CHG_order)))
   print(paste("Precision Adjusted CHH DMR score of:", round(boot_out$CHH_Score,3)[1], " For a CHH bootstrap p-value of: ", (bo_CHH_order[bo_CHH_order$Target==1,]$rank)/nrow(bo_CHH_order)))
-  
+
   print(rbind(target_rs[target_rs$adjusted_soundscore==boot_out$CG_Score[1] & target_rs$adjusted_soundscore!=0,], target_rs[target_rs$adjusted_soundscore==boot_out$CHG_Score[1] & target_rs$adjusted_soundscore!=0,], target_rs[target_rs$adjusted_soundscore==boot_out$CHH_Score[1]& target_rs$adjusted_soundscore!=0,]))
-  
+
   print(paste("Final Bootstrap Adjusted CG DMR Score:", round(bo_CG[1,2]*((bo_CG[1,2]-mean(bo_CG[-1,2], na.rm = TRUE))/sd(bo_CG[,2], na.rm=TRUE)),2)))
   print(paste("Final Bootstrap Adjusted CHG DMR Score:", round(bo_CHG[1,3]*((bo_CHG[1,3]-mean(bo_CHG[-1,3], na.rm = TRUE))/sd(bo_CHG[,3], na.rm = TRUE)),2)))
   print(paste("Final Bootstrap Adjusted CHH DMR Score:", round(bo_CHH[1,4]*((bo_CHH[1,4]-mean(bo_CHH[-1,4], na.rm = TRUE))/sd(bo_CHH[,4], na.rm = TRUE)),2)))
@@ -1588,10 +1602,10 @@ boot_score<-function(sound_score_obj = NA, target_gene= NA, target_start=-1000, 
   print(paste("2-3: Moderate methylation shifts near oligo treatment"))
   print(paste("3-5: Significant methylation shifts near oligo treatment"))
   print(paste("5+: Very Strong evidencce of DMR associated with oligo treatment"))
-  
-  
+
+
   Boot_Obj <- list(boot_out, target_rs)
   names(Boot_Obj) <- c("bootstrap_scores", "target_rs")
   return(Boot_Obj)
-  
+
 }
