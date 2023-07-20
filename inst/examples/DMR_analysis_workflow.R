@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-library(sounDMR2)
+library(sounDMR)
 
 #-----------------Part 1 : ONT data clean up and standardization----------------
 
@@ -104,7 +104,7 @@ methyl_summary_cg <- changepoint_analysis(methyl_summary, CG_penalty = 9,
                                        CHG_penalty = 4, CHH_penalty = 7,
                                        target_genes = target_genes,
                                        save_plots = F,
-                                       z_col = "Z_GroupT_small")
+                                       z_col = changepoint_cols[1])
 
 #----------------------
 # DMR score rendering
@@ -118,4 +118,4 @@ DMR_score <- sound_score(changepoint_OF = methyl_summary_cg,
 
 # Only run bootscore if gene info is available
 DMR_boot_score <- boot_score(sound_score_obj = DMR_score,
-                             target_gene = "AT1G01640", scoring_col_name="dmr_score2")
+                             target_gene = target_genes[1], scoring_col_name="dmr_score2")
