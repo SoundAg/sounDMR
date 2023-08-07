@@ -1128,10 +1128,10 @@ get_standard_methyl_bed <-function(Methyl_bed="Methyl.bed", Sample_ID = "S1", Me
 
   if (Methyl_call_type %in% c('DSP', 'Bonito', 'Dorado')){
 
-    Methyl_bed_sub <- Methyl_bed[,c(1,2,6,10,11,12)]
+    Methyl_bed_sub <- Methyl_bed[,c(1,2,3,4,5,6)]
   }
     else if(Methyl_call_type=="Megalodon"){
-    Methyl_bed_sub <- Methyl_bed[,c(1,2,6,10,11,13)]
+    Methyl_bed_sub <- Methyl_bed[,c(1,2,3,4,5,7)]
     }
   #Assign column names
   colnames(Methyl_bed_sub) <- c("Chromosome","Position",paste("Strand", Sample_ID, sep="_"),"Tot_reads", paste("PerMeth", Sample_ID, sep="_") ,paste("CX", Sample_ID, sep="_"))
@@ -1142,6 +1142,50 @@ get_standard_methyl_bed <-function(Methyl_bed="Methyl.bed", Sample_ID = "S1", Me
 
   return(Methyl_bed_sub)
 }
+
+
+#' split_by_chromosome
+#' @description
+#' A function to split a bed file into multiple file by chromosome.
+#'
+#' @param input_file (str) - A string witht the name of the input file.
+#' @return output_filelist(list) - A list with the file names of the output files.
+
+split_by_chromosome <- function(input_file) {
+
+  output_filelist <- list()
+  # Get name without extension
+  base_name <- tools::file_path_sans_ext(basename(input_file))
+  # Open the input file for reading
+  con <- file(input_file, "r")
+  # Create a list to store the file connections for each chromosome output file
+  output_files <- list()
+  # Read the input file line by line and process each line
+  while (TRUE) {
+    line <- readLines(con, n = 1)
+    if (length(line) == 0) break # Exit loop if end of file is reached
+    # Split the line by tab to get the chromosome
+    fields <- strsplit(line, "\t")[[1]]
+    chromosome <- fields[1]
+    # Create the output file for the chromosome if not already opened
+    if (!(chromosome %in% names(output_files))) {
+      output_file <- paste0(base_name, "_chr_", chromosome, ".bed") 
+      output_filelist <- append(output_filelist, output_file)
+      output_files[[chromosome]] <- file(output_file, "w")
+    }
+    # Write the line to the corresponding output file
+    writeLines(line, output_files[[chromosome]])
+  }
+  # Close all output file connections
+  for (chr in names(output_files)) {
+    close(output_files[[chr]])
+    cat(paste("Chromosome", chr, "data has been written to", output_file, "\n"))
+  }
+  # Close the input file connection
+  close(con)
+  
+  return(output_filelist)
+  }
 
 
 #' generate_megaframe
@@ -1199,8 +1243,12 @@ generate_megaframe <- function(methyl_bed_list=All_methyl_beds, Sample_count = 0
   mylist <- c()
   experimental_design_df <- data.frame()
   for (i in 1:length(methyl_bed_list)){ #Iterate through methyl beds one by one
+    tmpsampleData <- read.csv(methyl_bed_list[i], sep="\t", header=FALSE, nrows = 5)
+    classes <- sapply(tmpsampleData, class)
+    #replace some columns to null to delete them
+    classes[c(3, 4, 5, 7, 8, 9)] <- "NULL"
     #import the bed file
-    import_bedfile <- data.frame(purrr::map(methyl_bed_list[i], ~read.csv(.x, sep="\t", header=FALSE)))
+    import_bedfile <- data.frame(purrr::map(methyl_bed_list[i], ~read.csv(.x, sep="\t", header=FALSE, colClasses = classes)))
     #call get_standard_methyl_bed function to clean up the bed file from each sample
     methyl_data <- get_standard_methyl_bed(Methyl_bed = import_bedfile, Sample_ID = sample_number[i], Methyl_call_type= Methyl_call_type )
     #getting the count of nrow for sanity checks
@@ -1267,7 +1315,6 @@ generate_megaframe <- function(methyl_bed_list=All_methyl_beds, Sample_count = 0
 
   return (Megaframe)
 }
-
 
 
 #' add_zoom_coords
