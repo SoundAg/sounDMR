@@ -544,17 +544,17 @@ save_model_summary <- function(i, Output_Frame, model_summary, ind_name = '') {
 #' @export
 #'
 
-run_binomial <- function(LM, i = int, Output_Frame, formula,
-                      optimizer_func = 'optimizer') {
+run_binomial <- function(LM, i = int, formula,
+                         optimizer_func = 'optimizer') {
   binom_model <- glmer(formula, data=LM, family = binomial,
                        glmerControl(check.conv.grad = .makeCC(action = "stop",
-                                                        tol = 2e-3, relTol = NULL),
-                              optimizer=optimizer_func, optCtrl = list(maxfun = 500000)))
+                                                              tol = 2e-3, relTol = NULL),
+                                    optimizer=optimizer_func, optCtrl = list(maxfun = 500000)))
   # Outputs of this model
   model_summary <- as.data.frame(summary(binom_model)$coefficients)
-  Output_Frame <- save_model_summary(i, Output_Frame, model_summary)
-
-  return(Output_Frame)
+  #Output_Frame <- save_model_summary(i, Output_Frame, model_summary)
+  
+  return(model_summary)
 }
 
 
@@ -575,12 +575,14 @@ run_model <- function(data, i, Output_Frame, formula, model_type,
                       individual_name_z = ''){
   if (model_type == 'binomial') {
     tryCatch({
-      Output_Frame <- run_binomial(data, i, Output_Frame, formula, 'bobyqa')
+      ith_model_summary <- run_binomial(data, i, Output_Frame, formula, 'bobyqa')
 
       # If that model didn't converge, it tried again with a different optimizer, allows ~20% more model convergence
     },error = function(e){tryCatch({ print(paste(i, "No bobyqa Converge, trying Nelder"))
       # Run the model with Nelder_Mead optimizer
-      Output_Frame <- run_binomial(data, i, Output_Frame, formula, 'Nelder_Mead')
+      ith_model_summary <- run_binomial(data, i, Output_Frame, formula, 'Nelder_Mead')
+	  
+	  Output_Frame <- save_model_summary(i, Output_Frame, ith_model_summary,individual_name_z)
 
     }, error=function(e){print(paste(i, "No Converge"))})
     })
@@ -593,8 +595,8 @@ run_model <- function(data, i, Output_Frame, formula, model_type,
                                  optimizer=optim, optArgs=list(method="BFGS")))
 
       # Save the model output
-      model_summary <- as.data.frame(summary(beta_binomial)$coefficients$cond)
-      Output_Frame <- save_model_summary(i, Output_Frame, model_summary,
+      ith_model_summary <- as.data.frame(summary(beta_binomial)$coefficients$cond)
+      Output_Frame <- save_model_summary(i, Output_Frame, ith_model_summary,
                                           individual_name_z)
     }, error=function(e){
       #print(paste(i, "No Converge"))
@@ -602,7 +604,7 @@ run_model <- function(data, i, Output_Frame, formula, model_type,
       })
   } else {
     print('Please choose a model type of "binomial" or "beta-binomial".')
-    Output_Frame <- Output_Frame
+    #Output_Frame <- Output_Frame
   }
   return(Output_Frame)
 }
@@ -646,25 +648,28 @@ group_DMR <- function(Output_Frame, ZoomFrame_filtered, experimental_design_df, 
 
   # Loop to run groupwise analysis for each BP
   for(i in 1:nrow(Output_Frame)){
+	
+	ZoomFrame_filtered_temp <- ZoomFrame_filtered[i,]  
     # Make long version of input frame for the i'th cytosine row
-    LM <- pivot_and_subset(ZoomFrame_filtered[i,], 'Meth', 'Meth',
+    LM <- pivot_and_subset(ZoomFrame_filtered_temp, 'Meth', 'Meth',
                            colnames_of_interest = c('Chromosome', 'Gene', 'Position', 'Strand', 'CX',
                                                       'Zeroth_pos', 'Individual'))
     LM$Individual <- gsub("Meth_","", LM$Individual, perl = T)
     # For rows with at least X(3) methylated reads across all individuals, move forward
     if(sum(as.numeric(LM$Meth), na.rm=TRUE) >= reads_threshold){
       # Do the same thing for unmethylated reads
-      LUM <- pivot_and_subset(ZoomFrame_filtered[i,], 'UnMeth', 'UnMeth',
+      LUM <- pivot_and_subset(ZoomFrame_filtered_temp, 'UnMeth', 'UnMeth',
                               colnames_of_interest = c('Chromosome', 'Gene', 'Position', 'Strand', 'CX',
                                                        'Zeroth_pos', 'Individual'))
       LM <- cbind(LM,LUM[,ncol(LUM)])
       # Merge with experimental_design_df to allow for DML testing for that base
-      LM <- merge(LM, experimental_design_df, by.x="Individual",by.y="ID", all=FALSE)
+      LM <- LM %>% left_join(experimental_design_df, by=c('Individual'='ID'))
 
       # Has to have Y unmethylated reads across all individuials
       if(sum(as.numeric(LM$UnMeth), na.rm=TRUE) >= reads_threshold){
         # Run the model and save the output
         Output_Frame <- run_model(LM, i, Output_Frame, formula, model)
+		rm(LM, LUM, ZoomFrame_filtered_temp)
       }
     }
   }
@@ -1116,31 +1121,33 @@ sound_score <- function(changepoint_OF = dataframe, Statistic="Z_GroupT_small",
 #' @param Methyl_bed (df) - Data frame containing the ONT methylation calls in a bed file for each individual separately
 #' @param Sample_ID (str) - A string that is used inplace of sample name to keep it uniform. We are using an enumerator to generate this based on the number of samples/individuals in the experiment.
 #' @param Methyl_call_type (str) - A string that includes information about the type of run. Currently this package works on Megalodon , DSP (DeepSignal Plant), Dorado and Bonito. Default call type is Dorado.
+#' @param max_read_depth (int) - This parameter can be used to filter out rows with high red depth such as highly repetative regions to not be included in the analysis. Default is 0. 
 #' @return Methyl_bed_sub (df) - Standard data frame methyl file for every individual with Meth, Unmeth and Per_Meth columns
 #' @import tidyverse
 #' @import stringr
 #' @export
 
-get_standard_methyl_bed <-function(Methyl_bed="Methyl.bed", Sample_ID = "S1", Methyl_call_type="Dorado") {
-
+get_standard_methyl_bed <-function(Methyl_bed="Methyl.bed", Sample_ID = "S1", Methyl_call_type="Dorado", max_read_depth='') {
+  
   # Extract columns of interest based on which process was run
   #Columns of Interest include Chromosome|Position|Strand|Total_reads|Percent_Methylation|Cytosine_context
-
+  
   if (Methyl_call_type %in% c('DSP', 'Bonito', 'Dorado')){
-
-    Methyl_bed_sub <- Methyl_bed[,c(1,2,6,10,11,12)]
+    
+    Methyl_bed <- Methyl_bed[,c(1,2,6,10,11,12)]
   }
-    else if(Methyl_call_type=="Megalodon"){
-    Methyl_bed_sub <- Methyl_bed[,c(1,2,6,10,11,13)]
-    }
+  else if(Methyl_call_type=="Megalodon"){
+    Methyl_bed <- Methyl_bed[,c(1,2,6,10,11,13)]
+  }
   #Assign column names
-  colnames(Methyl_bed_sub) <- c("Chromosome","Position",paste("Strand", Sample_ID, sep="_"),"Tot_reads", paste("PerMeth", Sample_ID, sep="_") ,paste("CX", Sample_ID, sep="_"))
+  colnames(Methyl_bed) <- c("Chromosome","Position",paste("Strand", Sample_ID, sep="_"),"Tot_reads", paste("PerMeth", Sample_ID, sep="_") ,paste("CX", Sample_ID, sep="_"))
   #calculate Meth and Unmeth reads from total reads. This is necessary for downstream Differential Methylation Region (DMR) analysis.
-  Methyl_bed_sub[[paste("Meth", Sample_ID, sep="_")]] <- round( (Methyl_bed_sub[[paste("PerMeth", Sample_ID, sep="_")]] * Methyl_bed_sub$Tot_reads)/100 )
-  Methyl_bed_sub[[paste("UnMeth", Sample_ID, sep="_")]] <- (Methyl_bed_sub$Tot_reads - Methyl_bed_sub[[paste("Meth", Sample_ID, sep="_")]])
-  Methyl_bed_sub <- Methyl_bed_sub %>% select(-Tot_reads)
-
-  return(Methyl_bed_sub)
+  Methyl_bed[[paste("Meth", Sample_ID, sep="_")]] <- round( (Methyl_bed[[paste("PerMeth", Sample_ID, sep="_")]] * Methyl_bed$Tot_reads)/100 )
+  Methyl_bed[[paste("UnMeth", Sample_ID, sep="_")]] <- (Methyl_bed$Tot_reads - Methyl_bed[[paste("Meth", Sample_ID, sep="_")]])
+  Methyl_bed <- Methyl_bed %>% filter(Tot_reads<=max_read_depth)
+  Methyl_bed <- Methyl_bed %>% select(-Tot_reads)
+  
+  return(Methyl_bed)
 }
 
 
@@ -1242,7 +1249,7 @@ generate_megaframe <- function(methyl_bed_list=All_methyl_beds, Sample_count = 0
   #sanity check - to ensure no NAs in Strand and CX columns after coalesce
   if ( (sum(is.na(Megaframe$Strand))==0 ) &
        sum(is.na(Megaframe$CX))==0 ) {
-    cat('QC : Megaframe looks good, Proceed to Zoomframe \n')
+    cat('QC : Megaframe looks good \n')
   } else {
     cat('QC: Strand and CX should not have NAs, re-run the megaframe function \n')
   }
@@ -1264,6 +1271,7 @@ generate_megaframe <- function(methyl_bed_list=All_methyl_beds, Sample_count = 0
                                ylab("Count of rows with missing data")) + theme_bw()
 
   print(QCplot)
+  rm(QCplot)
 
   return (Megaframe)
 }
