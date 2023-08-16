@@ -1,4 +1,4 @@
-# soundDMR
+# sounDMR <img src="man/figures/logo.png" align="right" height="120" alt="" />
 
 There are a number of steps in our differential methylation pipeline that run through the use of in-house scripts.
 
