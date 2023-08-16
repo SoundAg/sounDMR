@@ -2,9 +2,11 @@
 !*.R
 !*.Rmd
 !*.Rd
+!*.Rd
 !*.tar.gz
 !*.md
 !*.csv
 !*.bed
 !.gitignore
 !.Rbuildignore
+.Rproj.user
