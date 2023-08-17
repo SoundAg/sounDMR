@@ -1,10 +1,11 @@
 # sounDMR <img src="man/figures/logo.png" align="right" height="120" alt="" />
+For more information on the package, as well as examples of the types of downstream analyses that can be run using these results see Colicchio et al., 2023, Scientific Reports : https://www.nature.com/articles/s41598-023-38356-7
 
-There are a number of steps in our differential methylation pipeline that run through the use of in-house scripts.
+The following document contains a walkthrough of how to get ONT data into the appropriate format to run through sounDMR and a simple tutorial of the functions used to run a differential methylation analysis using sounDMR.
 
 
 ## Pre-requisites
-We need to run Megalodon/Deep-Signal Plant/Bonito to calculate methylation levels at each cytosine for each individual. This package technically works with any ONT bed file with a format as mentioned in [here](https://www.encodeproject.org/data-standards/wgbs/), in the **Description of bedMethyl file section**. If focusing on a small part fo the genome, these bed files must be subset using `bedtools intersect` to focus on specific regions of the genome.
+We need to run Megalodon/Deep-Signal Plant/Bonito/Dorado to calculate methylation levels at each cytosine for each individual. This package technically works with any ONT bed file with a format as mentioned in [here](https://www.encodeproject.org/data-standards/wgbs/), in the **Description of bedMethyl file section**. If focusing on a small part fo the genome, these bed files must be subset using `bedtools intersect` to focus on specific regions of the genome.
 
 ```
 bedtools intersect -a [ONT_methyl.bed] -b [target_regions.bed] -wa > [ONT_methyl_subset.bed]
