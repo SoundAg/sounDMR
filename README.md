@@ -83,20 +83,46 @@ Zeroth_pos : Position adjusted to have position 0 as ATG for the speicifc gene;
 Gene : This can inclkude either Gene Id or Gene names for tracking during DMR analysis;
 Zoom_co : This keeps track of whether the given position is within the gene or is an adaptive region.
 
+```
+# Find the Bedmethyl files within the working directory
+methyl_bed <- list.files(path=".",pattern="*.bed")
+
+```
+
+For whole genome bed files, additional steps are necessary to ensure data is in the right format and that it is subset by chromsomes
+to make sure that R doesn't run out of memory. 
+
+```
+#Split the large bed file by chromosomes
+bedlist <- c()
+for (i in 1:length(methyl_bed)) {
+  beds <- split_by_chromosome(methyl_bed[i])
+  bedlist[(length(bedlist) + 1)] <- list(beds)
+}
+
+#get the list of chromosome names to automatically used to grep the respective bedfiles
+#or you can manually add a list of chromosomes chr_list <- c()
+chrs_list <- unique(str_extract(bedlist,"ch0"))
+
+
+#extract bedfile names based on the chromosome list.
+#Note: For whole genome bed files, You can choose 1 at a time to avoid running out of memory
+#update chrs_list[1] for the chromosome of interest
+methyl_bed <- bedlist[grep(chrs_list[1],bedlist)]
+```
+
 Zoomframe is only created if and when the Geneco file is provided. Geneco file should include the following columns at the bare minimum :
 Gene_Name | Chromosome | Low | High | Gene_length | Strand | Adapt_Low | Adapt_High .
-Low and High refer to gene body coordinates in the 5'to 3' direction and Adapt_Low and Adapt_High refers to the coordinates for adaptive region around the gene.
+Low and High refer to gene body coordinates in the 5'to 3' direction and Adapt_Low and Adapt_High refers to the coordinates for adaptive region around the gene. The previous step can be skipped in this case. 
 
 ```
 # Import the Geneco file
 Geneco <- read.table(file.choose(), header=TRUE, sep=",")
 
-# Find the methyl bed files within the working directory
-All_methyl_beds <- list.files(path=".",pattern="*.bed")
 
 # create methylframe
 #without gene info
-Methylframe <- generate_methylframe(methyl_bed_list=All_methyl_beds, Sample_count = 0,
+Methylframe <- generate_methylframe(methyl_bed_list=methyl_bed, Sample_count = 0,
                                   Methyl_call_type="Dorado", filter_NAs = 0,
                                   gene_info = FALSE, gene_coordinate_file = NA, Gene_column=NA,
                                   target_info=FALSE,
