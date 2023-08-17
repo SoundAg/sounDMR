@@ -55,7 +55,7 @@ create_gene_percent_x <- function(LongPercent, x = 'Chromosome',
     print(paste(x, 'is not a column found in the data. Try another column name.'))
     return(NA)
   }
-
+  
   return(dcast_output)
 }
 
@@ -75,17 +75,17 @@ create_gene_percent_x <- function(LongPercent, x = 'Chromosome',
 #' @export
 
 create_dmr_obj <- function(ZoomFrame = dataframe,
-                       experimental_design_df = dataframe) {
+                           experimental_design_df = dataframe) {
   # Clean the data
   print('Step 1: removing rows that contain 0 methylation')
   Inputpers <- dplyr::select(ZoomFrame, starts_with("Per"))
   Inputpers$MeanMeth <- rowMeans(Inputpers, na.rm=TRUE)
   ZoomFrame_filtered <- ZoomFrame[Inputpers$MeanMeth != 0,]
-
+  
   # Important columns
   colnames_of_interest <- c('Chromosome', 'Gene', 'Position', 'Strand', 'CX',
                             'Zeroth_pos', 'Plant')
-
+  
   #QC Make sure the correct columns are present
   print('Step 2: checking for missing columns in experimental id')
   for (col in colnames_of_interest) {
@@ -93,7 +93,7 @@ create_dmr_obj <- function(ZoomFrame = dataframe,
       print(paste(col, 'not found in the ZoomFrame_filtered'))
     }
   }
-
+  
   # Create columns if they are not present
   if (!'Zeroth_pos' %in% colnames(ZoomFrame_filtered)){
     print('Zeroth_pos column not found, running analysis on Positon column')
@@ -122,14 +122,14 @@ create_dmr_obj <- function(ZoomFrame = dataframe,
     print('Individual_Name column not found in the Experimental_ID, using Plant')
     experimental_design_df$Individual_Name <- experimental_design_df$Plant
   }
-
+  
   # Convert the experimental ID 'Plant' column to character
   experimental_design_df$Plant <- as.character(experimental_design_df$Plant)
-
+  
   # We want to order the input frame in such a way that it will be easy to recreate analysis
   print('Step 3: reordering ZoomFrame_filtered')
   ZoomFrame_filtered <- ZoomFrame_filtered[order(ZoomFrame_filtered[,'Gene'], ZoomFrame_filtered[,'Zeroth_pos']), ]
-
+  
   # Create the Longer dataframes
   #------------------------------
   print('Step 4: creating longer dataframes')
@@ -138,7 +138,7 @@ create_dmr_obj <- function(ZoomFrame = dataframe,
                                   colnames_of_interest = c('Chromosome', 'Gene', 'Position', 'Strand', 'CX',
                                                            'Zeroth_pos', 'Individual'))
   LongPercent$Individual <- gsub("PerMeth_", "", LongPercent$Individual, perl = T)
-
+  
   #Very similar steps, but for #methylated and unmethylated reads
   LongUnMeth <- pivot_and_subset(ZoomFrame_filtered, 'UnMeth', 'RD',
                                  colnames_of_interest = c('Chromosome', 'Gene', 'Position', 'Strand', 'CX',
@@ -146,15 +146,15 @@ create_dmr_obj <- function(ZoomFrame = dataframe,
   LongMeth <- pivot_and_subset(ZoomFrame_filtered, 'Meth', 'RD',
                                colnames_of_interest = c('Chromosome', 'Gene', 'Position', 'Strand', 'CX',
                                                         'Zeroth_pos', 'Individual'))
-
+  
   #Replacing read depth of NA with 0
   LongUnMeth$RD[is.na(LongUnMeth$RD)] = 0
   LongMeth$RD[is.na(LongMeth$RD)] = 0
-
+  
   #Creating column of total read depth
   LongMeth$total_RD <- LongMeth$RD + LongUnMeth$RD
   LongMeth$Individual <- gsub("Meth_","", LongMeth$Individual, perl = T)
-
+  
   #QC to check that LongPercent contains the correct number of rows
   if (nrow(LongPercent) == nrow(ZoomFrame_filtered) * nrow(experimental_design_df)) {
     print('LongPercent contains the expected number of rows')
@@ -162,25 +162,25 @@ create_dmr_obj <- function(ZoomFrame = dataframe,
     print(paste('LongPercent contains', nrow(LongPercent), 'rows. Expected:',
                 (nrow(ZoomFrame_filtered) * nrow(experimental_design_df)), 'rows'))
   }
-
+  
   print('Step 5: merging long files with experimental_design_df to annotate')
   # Merge Long files with Exp_ID to annotate
   print('Step 6: annotating long files with experimental_design data frame')
   LongPercent <- dplyr::left_join(LongPercent, experimental_design_df, by = c('Individual' = 'ID'))
   LongMeth <- dplyr::left_join(LongMeth, experimental_design_df, by = c('Individual' = 'ID'))
-
+  
   # Aggregate
   print('Step 7: aggregating by plant')
   LongPercent <- LongPercent %>%
     group_by(Gene, Zeroth_pos, Plant, Position, CX, Strand, Group, Chromosome) %>%
     summarize(Percent = mean(Percent, na.rm = T))
-
+  
   LongMeth <- LongMeth %>%
     group_by(Gene, Zeroth_pos, Plant, Position, CX, Strand, Group, Chromosome) %>%
     summarize(total_RD = mean(total_RD, na.rm = T))
   LongMeth <- LongMeth[,c('Chromosome', 'Gene', 'Position', 'Strand', 'CX',
                           'Zeroth_pos', 'Plant', 'total_RD', 'Group')]
-
+  
   # Save all the outputs
   out <- list()
   out$ZoomFrame_filtered <- ZoomFrame_filtered
@@ -189,7 +189,7 @@ create_dmr_obj <- function(ZoomFrame = dataframe,
   out$LongMeth <- LongMeth
   out$experimental_design_df <- experimental_design_df
   out$Inputpers <- Inputpers
-
+  
   return(out)
 }
 
@@ -215,9 +215,9 @@ create_dmr_obj <- function(ZoomFrame = dataframe,
 
 subset_cols <- function(df,
                         colnames_of_interest = c('Chromosome', 'Gene', 'Position', 'Strand', 'CX',
-                                                     'Zeroth_pos', 'Individual')) {
+                                                 'Zeroth_pos', 'Individual')) {
   subsetted_df <- df[,c(colnames_of_interest, colnames(df)[ncol(df)])]
-
+  
   return(subsetted_df)
 }
 
@@ -245,11 +245,11 @@ pivot_and_subset <- function(data,
                                                       'Zeroth_pos', 'Individual')){
   # Pivot data
   pivoted_df <- tidyr::pivot_longer(data, cols = starts_with(starts_with_cols),
-                             names_to = 'Individual', values_to = values_to)
-
+                                    names_to = 'Individual', values_to = values_to)
+  
   # Subset columns
   pivoted_and_subsetted_df <- subset_cols(pivoted_df, colnames_of_interest)
-
+  
   return(pivoted_and_subsetted_df)
 }
 
@@ -320,7 +320,7 @@ create_methyl_summary <- function(dmr_obj, control = 'C', treated = 'T',
                           value.var = "total_RD", na.rm=TRUE)
   GenePercentGroup <- create_gene_percent_x(dmr_obj$LongPercent, 'Group', mean)
   GenePercentPlant <- create_gene_percent_x(dmr_obj$LongPercent, 'Plant', mean)
-
+  
   # QC
   # Make sure the GenePercentX dfs are the same length as the Zoomframe_filtered
   # and in the same order
@@ -328,19 +328,19 @@ create_methyl_summary <- function(dmr_obj, control = 'C', treated = 'T',
       sum(GenePercentPlant$Gene == dmr_obj$ZoomFrame_filtered$Gene) != nrow(dmr_obj$ZoomFrame_filtered)) {
     print('Output is in a different order. Try running again.')
   }
-
+  
   # Create experimental_design_df_treated
   experimental_design_df_treated <- dmr_obj$experimental_design_df[dmr_obj$experimental_design_df$Group != control,]
-
+  
   # Create the beginnings of the Output statistic data frame
   Output_Frame <- dmr_obj$ZoomFrame_filtered[,colnames_of_interest[-length(colnames_of_interest)]]
-
+  
   # Create 3 new cols for each individual
   Output_Frame <- create_cols_for_individuals(experimental_design_df_treated,
                                               Output_Frame,
                                               GenePercentPlant, GeneDepthPlant,
                                               GenePercentGroup, control)
-
+  
   # QC
   # Checking Output_Frame created the three new cols for each individual
   if (ncol(Output_Frame) == (length(colnames_of_interest) - 1) + 3 * length(unique(experimental_design_df_treated$Plant))) {
@@ -350,13 +350,13 @@ create_methyl_summary <- function(dmr_obj, control = 'C', treated = 'T',
     print(paste('Expected:', (length(colnames_of_interest) - 1) + 3 * length(unique(experimental_design_df_treated$Plant)),
                 'Found:', ncol(Output_Frame)))
   }
-
+  
   #Add in any summary statistic columns, such as this one
   Output_Frame <- cbind(Output_Frame,GenePercentPlant[,3:ncol(GenePercentPlant)])
   Output_Frame$Treat_V_Control <- GenePercentGroup[[treated]] - GenePercentGroup[[control]]
   Output_Frame$Control <- GenePercentGroup[[control]]
   Output_Frame$Treated <- GenePercentGroup[[treated]]
-
+  
   # Additional summary columns
   if (length(additional_summary_cols) != 0) {
     for (tuple in additional_summary_cols) {
@@ -368,7 +368,7 @@ create_methyl_summary <- function(dmr_obj, control = 'C', treated = 'T',
       Output_Frame <- cbind(Output_Frame, GenePercentX)
     }
   }
-
+  
   return(Output_Frame)
 }
 
@@ -481,7 +481,7 @@ create_random_effects <- function(random = c('Group', 'ID')) {
 create_formula <- function(fixed, random) {
   fixed_effects <- create_fixed_effects(fixed)
   random_effects <- create_random_effects(random)
-
+  
   if (fixed_effects != '' & random_effects != '') {
     effects = paste(random_effects, '+', fixed_effects)
   } else if (fixed_effects != '' & random_effects == '') {
@@ -512,7 +512,7 @@ create_formula <- function(fixed, random) {
 save_model_summary <- function(i, Output_Frame, model_summary, ind_name = '') {
   # Get the row names
   row_names <- rownames(model_summary)[2:length(rownames(model_summary))]
-
+  
   for (name in row_names) {
     if (ind_name == '') {
       # Group Analysis
@@ -552,7 +552,6 @@ run_binomial <- function(LM, i = int, formula,
                                     optimizer=optimizer_func, optCtrl = list(maxfun = 500000)))
   # Outputs of this model
   model_summary <- as.data.frame(summary(binom_model)$coefficients)
-  #Output_Frame <- save_model_summary(i, Output_Frame, model_summary)
   
   return(model_summary)
 }
@@ -575,15 +574,14 @@ run_model <- function(data, i, Output_Frame, formula, model_type,
                       individual_name_z = ''){
   if (model_type == 'binomial') {
     tryCatch({
-      ith_model_summary <- run_binomial(data, i, Output_Frame, formula, 'bobyqa')
-
+      ith_model_summary <- run_binomial(data, i, formula, 'bobyqa')
+      
       # If that model didn't converge, it tried again with a different optimizer, allows ~20% more model convergence
     },error = function(e){tryCatch({ print(paste(i, "No bobyqa Converge, trying Nelder"))
       # Run the model with Nelder_Mead optimizer
-      ith_model_summary <- run_binomial(data, i, Output_Frame, formula, 'Nelder_Mead')
-	  
-	  Output_Frame <- save_model_summary(i, Output_Frame, ith_model_summary,individual_name_z)
-
+      ith_model_summary <- run_binomial(data, i, formula, 'Nelder_Mead')
+      Output_Frame <- save_model_summary(i, Output_Frame, ith_model_summary,individual_name_z)
+      
     }, error=function(e){print(paste(i, "No Converge"))})
     })
   } else if (model_type == 'beta-binomial') {
@@ -593,18 +591,17 @@ run_model <- function(data, i, Output_Frame, formula, model_type,
                                family=betabinomial(link = "logit"),
                                control=glmmTMBControl(
                                  optimizer=optim, optArgs=list(method="BFGS")))
-
+      
       # Save the model output
       ith_model_summary <- as.data.frame(summary(beta_binomial)$coefficients$cond)
       Output_Frame <- save_model_summary(i, Output_Frame, ith_model_summary,
-                                          individual_name_z)
+                                         individual_name_z)
     }, error=function(e){
       #print(paste(i, "No Converge"))
       paste(i, 'No Converge')
-      })
+    })
   } else {
     print('Please choose a model type of "binomial" or "beta-binomial".')
-    #Output_Frame <- Output_Frame
   }
   return(Output_Frame)
 }
@@ -635,25 +632,25 @@ group_DMR <- function(Output_Frame, ZoomFrame_filtered, experimental_design_df, 
   #  Create the model formula first
   formula <- create_formula(fixed, random)
   print(formula)
-
+  
   #  Get the number of columns in the Output_Frame dataframe
   original_Output_Frame_col_number <- ncol(Output_Frame)
-
+  
   # The modelling here is the most "delicate" part of the operation.  Options include:
   # (A) cbind(Meth, UnMeth) ~ (1|Plant) + Treatment
   # (B) cbind(Meth, UnMeth) ~ (1|Plant) + Treatment + Generation
   # (C) cbind(Meth, UnMeth) ~ (1|Plant) + Treatment + Generation +Treatment*Generation
   # (D) cbind(Meth, UnMeth) ~ (1|Plant) + Gene_Expression
   # (E) cbind(Meth, UnMeth) ~ (1|Plant) + Phenotype
-
+  
   # Loop to run groupwise analysis for each BP
   for(i in 1:nrow(Output_Frame)){
-	
-	ZoomFrame_filtered_temp <- ZoomFrame_filtered[i,]  
+    
+    ZoomFrame_filtered_temp <- ZoomFrame_filtered[i,]  
     # Make long version of input frame for the i'th cytosine row
     LM <- pivot_and_subset(ZoomFrame_filtered_temp, 'Meth', 'Meth',
                            colnames_of_interest = c('Chromosome', 'Gene', 'Position', 'Strand', 'CX',
-                                                      'Zeroth_pos', 'Individual'))
+                                                    'Zeroth_pos', 'Individual'))
     LM$Individual <- gsub("Meth_","", LM$Individual, perl = T)
     # For rows with at least X(3) methylated reads across all individuals, move forward
     if(sum(as.numeric(LM$Meth), na.rm=TRUE) >= reads_threshold){
@@ -664,18 +661,18 @@ group_DMR <- function(Output_Frame, ZoomFrame_filtered, experimental_design_df, 
       LM <- cbind(LM,LUM[,ncol(LUM)])
       # Merge with experimental_design_df to allow for DML testing for that base
       LM <- LM %>% left_join(experimental_design_df, by=c('Individual'='ID'))
-
+      
       # Has to have Y unmethylated reads across all individuials
       if(sum(as.numeric(LM$UnMeth), na.rm=TRUE) >= reads_threshold){
         # Run the model and save the output
         Output_Frame <- run_model(LM, i, Output_Frame, formula, model)
-		rm(LM, LUM, ZoomFrame_filtered_temp)
+        rm(LM, LUM, ZoomFrame_filtered_temp)
       }
     }
   }
   #  Replace NA values in these columns with 0s
   Output_Frame[,original_Output_Frame_col_number:ncol(Output_Frame)][is.na(Output_Frame[,original_Output_Frame_col_number:ncol(Output_Frame)])] = 0
-
+  
   return(Output_Frame)
 }
 
@@ -695,36 +692,36 @@ individual_DMR <- function(Output_Frame, ZoomFrame_filtered, experimental_design
                            reads_threshold = 3, control = 'C', model = 'beta-binomial',
                            colnames_of_interest = c('Chromosome', 'Gene', 'Position',
                                                     'Strand', 'CX', 'Zeroth_pos', 'Individual')) {
-
+  
   # Obtain the formula
   formula <- create_formula(fixed, random)
   print(formula)
-
+  
   Exp_ID_Treated <- experimental_design_df[experimental_design_df$Group == 'T',]
-
+  
   # Create a progress bar
   pb = txtProgressBar(min = 0, max = nrow(Output_Frame), initial = 0, style = 3)
-
+  
   #This model compares each of the treated individuals with the whole group of control individuals.
   for(i in 1:nrow(Output_Frame)){
     #First steps up until "For k in ..." are the same as group models.
     LM <- pivot_and_subset(ZoomFrame_filtered[i,], 'Meth', 'Meth',
                            colnames_of_interest)
     LM$Individual <- gsub("Meth_", "", LM$Individual, perl = T)
-
+    
     if(sum(as.numeric(LM$Meth), na.rm=TRUE) >= reads_threshold){
       LUM <- pivot_and_subset(ZoomFrame_filtered[i,], 'UnMeth', 'UnMeth',
                               colnames_of_interest)
       LM <- cbind(LM, LUM[,ncol(LUM)])
       LM <- merge(LM, experimental_design_df, by.x="Individual", by.y="ID", all=FALSE)
-
+      
       #Here we return to the Exp_ID_Treated file, this file has only individuals that are in a treated group. Starting with the first row in this file.
       for(k in 1:nrow(Exp_ID_Treated)){
         #Make subset version of the longmeth file that only includes the control individual and you individual of interest.  Need to confirm Exp_ID_Treated$ID corresponds to LM$Individual
         LMEX <- LM[LM$Group == control | LM$Individual == Exp_ID_Treated$ID[k], ]
         individual_name <- Exp_ID_Treated$Individual_Name[k]
         individual_name_z <- paste0(individual_name, '_Z')
-
+        
         #Now, if has more than 2 meth and unmeth cytosines, runs the statistical model
         if(sum(as.numeric(LMEX$UnMeth), na.rm=TRUE) > reads_threshold & sum(as.numeric(LMEX$Meth), na.rm=TRUE) > reads_threshold){
           # Run the model
@@ -752,8 +749,8 @@ individual_DMR <- function(Output_Frame, ZoomFrame_filtered, experimental_design
 #' @export
 
 find_DMR <- function(Output_Frame, dmr_obj, fixed = c('Group'),
-                random = c('Plant'), reads_threshold = 3,
-                model, control = '', analysis_type) {
+                     random = c('Plant'), reads_threshold = 3,
+                     model, control = '', analysis_type) {
   # The required columns
   colnames_of_interest <- c('Chromosome', 'Gene', 'Position', 'Strand', 'CX',
                             'Zeroth_pos', 'Plant')
@@ -793,7 +790,7 @@ find_DMR <- function(Output_Frame, dmr_obj, fixed = c('Group'),
 find_changepoint_col_options <- function(DMR_output, Output_Frame = Output_Frame) {
   #added_cols <- colnames(DMR_output[c((ncol(Output_Frame) + 1):ncol(DMR_output))])
   z_cols <- colnames(DMR_output)[grepl('Z_', colnames(DMR_output))]
-
+  
   print(z_cols)
 }
 
@@ -815,11 +812,11 @@ add_changepoint_info <- function(whole_df, changepoint, col_name) {
   MethRegionName <- paste0('MethRegion_', col_name)
   MethRegionLengthName <- paste0('MethRegionLength_', col_name)
   MethGroupName <- paste0('MethGroup_', col_name)
-
+  
   if (typeof(changepoint) != 'NULL') {
     changepoint <<- changepoint
     changepoints <- changepoint@cpts
-
+    
     #Add in the first and last cytosine if needed for the changepoint start and stop sites
     if ((1 %in% changepoints) & (nrow(whole_df) %in% changepoints)) {
       start <- changepoints
@@ -834,16 +831,16 @@ add_changepoint_info <- function(whole_df, changepoint, col_name) {
       start <- changepoints
       stop <- changepoints - 1
     }
-
+    
     BP_CG <- data.frame(cbind(start,stop))
     BP_CG$DifMean <- param.est(changepoint)$mean
-
+    
     # Add the start and stop sites at a given position
     for(i in 1:nrow(BP_CG)){
       BP_CG[i, 'BPStart'] <- whole_df[BP_CG[i,'start'], 'Position']
       BP_CG[i, 'BPStop'] <- whole_df[BP_CG[i,'stop'], 'Position']
     }
-
+    
     # Find the MethRegion, MethGroupName, and MethRegionLength
     whole_df[MethRegionName] = 0
     whole_df[MethRegionLengthName] = 0
@@ -853,13 +850,13 @@ add_changepoint_info <- function(whole_df, changepoint, col_name) {
                                                                                     as.numeric(BP_CG[i, 'BPStart']))
       whole_df[c(BP_CG[i, 'start']:BP_CG[i, 'stop']),MethGroupName] <- i
     }
-
+    
   } else {
     if (nrow(whole_df) == 1) {
-    #This is in case there are no changepoints bc the data isn't big enough
-    whole_df[MethRegionName] = whole_df[[col_name]]
-    whole_df[MethRegionLengthName] = 1
-    whole_df[MethGroupName] = 1
+      #This is in case there are no changepoints bc the data isn't big enough
+      whole_df[MethRegionName] = whole_df[[col_name]]
+      whole_df[MethRegionLengthName] = 1
+      whole_df[MethGroupName] = 1
     } else {
       whole_df[nrow(whole_df) + 1,] <- NA
       whole_df[1, MethRegionName] = whole_df[[col_name]]
@@ -867,7 +864,7 @@ add_changepoint_info <- function(whole_df, changepoint, col_name) {
       whole_df[1, MethGroupName] = 1
     }
   }
-
+  
   return(whole_df)
 }
 
@@ -888,7 +885,7 @@ find_cpt_mean <- function(data, z_col, penalty){
     {
       # Filter out any rows containing NAs
       data[is.na(data[[z_col]]) == 0, ]
-
+      
       # Run the changepoing analysis
       changepoint::cpt.mean(data[[z_col]], method = 'PELT',
                             penalty = 'Manual', pen.value = penalty)
@@ -897,7 +894,7 @@ find_cpt_mean <- function(data, z_col, penalty){
       print('No changepoints found, data contains 1 or 0 rows')
       return(NULL)
     })
-    return(changepoint_object)
+  return(changepoint_object)
 }
 
 
@@ -929,7 +926,7 @@ plot_changepoints <- function(data, changepoint_obj, gene_name, penalty_val,
       segment_data[i, 'y'] = changepoint_obj@param.est$mean[i]
       segment_data[i, 'yend'] = changepoint_obj@param.est$mean[i]
     }
-
+    
     # Create basic plot
     plot <- data %>%
       ggplot(aes(x = Zeroth_pos, y = !!sym(z_col))) +
@@ -938,12 +935,12 @@ plot_changepoints <- function(data, changepoint_obj, gene_name, penalty_val,
       labs(title = paste('Changepoints for', cyt_context, gene_name, '; penalty',
                          penalty_val)) +
       scale_x_continuous(expand = c(0, 0))
-
+    
     # Add in the segments
     plot <- plot + geom_segment(data = segment_data,
                                 aes(x = x, y = y, xend = xend, yend = yend),
                                 color = 'red')
-
+    
     return(plot)
   }, error = function(e) {
     return(paste('Figure could not be created for:', gene_name))
@@ -986,7 +983,7 @@ changepoint_analysis <- function(whole_df,
   everything <- everything[-1,]
   genes <- unique(whole_df$Gene)
   large_genes <- c()
-
+  
   # Create a progress bar
   print('Running changepoint analysis:')
   pb = txtProgressBar(min = 0, max = length(genes), initial = 0, style = 3)
@@ -996,22 +993,22 @@ changepoint_analysis <- function(whole_df,
     gene <- genes[i]
     # Create the filtered df to contain the gene of interest
     gene_df <- whole_df[whole_df$Gene == gene,]
-
+    
     # Create dfs for cytosine contexts
     gene_df.CG <- gene_df[gene_df$CX == 'CG',]
     gene_df.CHG <- gene_df[gene_df$CX == 'CHG',]
     gene_df.CHH <- gene_df[gene_df$CX == 'CHH',]
-
+    
     # Find the changepoints
     x.CG <- find_cpt_mean(gene_df.CG, z_col, CG_penalty)
     x.CHG <- find_cpt_mean(gene_df.CHG, z_col, CHG_penalty)
     x.CHH <- find_cpt_mean(gene_df.CHH, z_col, CHH_penalty)
-
+    
     # Add in the changepoint info
     gene_df.CG <- add_changepoint_info(gene_df.CG, x.CG, z_col)
     gene_df.CHG <- add_changepoint_info(gene_df.CHG, x.CHG, z_col)
     gene_df.CHH <- add_changepoint_info(gene_df.CHH, x.CHH, z_col)
-
+    
     # Create the plots
     if (gene %in% target_genes & nrow(gene_df) < 100000) {
       plot.CG <- plot_changepoints(gene_df.CG, x.CG, gene, CG_penalty, 'CG', z_col)
@@ -1034,19 +1031,19 @@ changepoint_analysis <- function(whole_df,
     } else if (gene %in% target_genes & nrow(gene_df) >= 100000) {
       large_genes <- c(large_genes, gene)
     }
-
+    
     # Combine everything into the everything dataframe (rename)
     everything <- rbind(everything, gene_df.CG, gene_df.CHG, gene_df.CHH)
-
+    
     # Update progress bar
     setTxtProgressBar(pb, i)
   }
   close(pb)
-
+  
   for (gene in large_genes) {
     print0(gene, ' has more than 100,000 cytosines. Plot not created')
   }
-
+  
   return(everything)
 }
 
@@ -1114,6 +1111,49 @@ sound_score <- function(changepoint_OF = dataframe, Statistic="Z_GroupT_small",
   return(SS_Obj)
 }
 
+#' split_by_chromosome
+#' @description
+#' A function to split a bed file into multiple file by chromosome.
+#' @param input_file (str) - A string with the name of the input file.
+#' @return output_filelist(list) - A list with the bedfile names of the output files.
+
+split_by_chromosome <- function(input_file) {
+  
+  output_filelist <- list()
+  # Get name without extension
+  base_name <- tools::file_path_sans_ext(basename(input_file))
+  # Open the input file for reading
+  con <- file(input_file, "r")
+  # Create a list to store the file connections for each chromosome output file
+  output_files <- list()
+  # Read the input file line by line and process each line
+  while (TRUE) {
+    line <- readLines(con, n = 1)
+    if (length(line) == 0) break # Exit loop if end of file is reached
+    # Split the line by tab to get the chromosome
+    fields <- strsplit(line, "\t")[[1]]
+    chromosome <- fields[1]
+    # Create the output file for the chromosome if not already opened
+    if (!(chromosome %in% names(output_files))) {
+      output_file <- paste0(base_name, "_chr_", chromosome, ".bed") 
+      output_filelist <- append(output_filelist, output_file)
+      output_files[[chromosome]] <- file(output_file, "w")
+    }
+    # Write the line to the corresponding output file
+    writeLines(line, output_files[[chromosome]])
+  }
+  # Close all output file connections
+  for (chr in names(output_files)) {
+    close(output_files[[chr]])
+    cat(paste("Chromosome", chr, "data has been written to", output_file, "\n"))
+  }
+  # Close the input file connection
+  close(con)
+  
+  return(output_filelist)
+}
+
+
 #' get_standard_methyl_bed
 #' @description
 #' A function to create a data frame for every individual in the experimental design without having to re run for every individual separately.
@@ -1127,24 +1167,24 @@ sound_score <- function(changepoint_OF = dataframe, Statistic="Z_GroupT_small",
 #' @import stringr
 #' @export
 
-get_standard_methyl_bed <-function(Methyl_bed="Methyl.bed", Sample_ID = "S1", Methyl_call_type="Dorado", max_read_depth='') {
+get_standard_methyl_bed <-function(Methyl_bed="Methyl.bed", Sample_ID = "S1", Methyl_call_type="Dorado", max_read_depth=100) {
   
   # Extract columns of interest based on which process was run
   #Columns of Interest include Chromosome|Position|Strand|Total_reads|Percent_Methylation|Cytosine_context
   
   if (Methyl_call_type %in% c('DSP', 'Bonito', 'Dorado')){
     
-    Methyl_bed <- Methyl_bed[,c(1,2,6,10,11,12)]
+    Methyl_bed <- Methyl_bed[,c(1,2,3,4,5,6)]
   }
   else if(Methyl_call_type=="Megalodon"){
-    Methyl_bed <- Methyl_bed[,c(1,2,6,10,11,13)]
+    Methyl_bed <- Methyl_bed[,c(1,2,3,4,5,7)]
   }
   #Assign column names
   colnames(Methyl_bed) <- c("Chromosome","Position",paste("Strand", Sample_ID, sep="_"),"Tot_reads", paste("PerMeth", Sample_ID, sep="_") ,paste("CX", Sample_ID, sep="_"))
   #calculate Meth and Unmeth reads from total reads. This is necessary for downstream Differential Methylation Region (DMR) analysis.
   Methyl_bed[[paste("Meth", Sample_ID, sep="_")]] <- round( (Methyl_bed[[paste("PerMeth", Sample_ID, sep="_")]] * Methyl_bed$Tot_reads)/100 )
   Methyl_bed[[paste("UnMeth", Sample_ID, sep="_")]] <- (Methyl_bed$Tot_reads - Methyl_bed[[paste("Meth", Sample_ID, sep="_")]])
-  Methyl_bed <- Methyl_bed %>% filter(Tot_reads<=max_read_depth)
+  Methyl_bed <- Methyl_bed %>% filter(Tot_reads<max_read_depth)
   Methyl_bed <- Methyl_bed %>% select(-Tot_reads)
   
   return(Methyl_bed)
@@ -1173,43 +1213,47 @@ get_standard_methyl_bed <-function(Methyl_bed="Methyl.bed", Sample_ID = "S1", Me
 
 
 
-generate_megaframe <- function(methyl_bed_list=All_methyl_beds, Sample_count = 0, Methyl_call_type="Dorado",  File_prefix=""){
-
+generate_megaframe <- function(methyl_bed_list=All_methyl_beds, Sample_count = 0, Methyl_call_type="Dorado", File_prefix="", max_read_depth=100){
+  
   #QC
-    QC <- missing(methyl_bed_list)
+  QC <- missing(methyl_bed_list)
   if(QC==TRUE){
     stop("methyl_bed_list parameter cannot be empty.
          Hint: Use methyl_bed_list vector you create in the previous step")
   }
-
+  
   if(Methyl_call_type==""){
     cat("Methylation call type not given, using default type i.e Dorado \n")
   }
-
-
+  
+  
   if (!(Methyl_call_type %in% c('DSP', 'Megalodon', 'Bonito', 'Dorado'))){
     stop("Methylation call not recognized, use 'DSP' or 'Megalodon' or 'Bonito' or 'Dorado', exiting!")
-
+    
   }
-
+  
   sample_number_list <- c()
   for (i in 1:(Sample_count + length(methyl_bed_list)) ){
     S_enumerator <- paste("S",i,sep="")
     sample_number_list[(length(sample_number_list) + 1)] <- list(S_enumerator)
   }
-
+  
   sample_number_list <- unlist(sample_number_list)
   sample_number <- sample_number_list[(Sample_count+1):(Sample_count+length(methyl_bed_list))]
-
+  
   cat("Creating the Megaframe \n")
-
+  
   mylist <- c()
   experimental_design_df <- data.frame()
   for (i in 1:length(methyl_bed_list)){ #Iterate through methyl beds one by one
+    tmpsampleData <- read.csv(methyl_bed_list[i], sep="\t", header=FALSE, nrows = 5)
+    classes <- sapply(tmpsampleData, class)
+    #replace some columns to null to delete them
+    classes[c(3, 4, 5, 7, 8, 9)] <- "NULL"
     #import the bed file
-    import_bedfile <- data.frame(purrr::map(methyl_bed_list[i], ~read.csv(.x, sep="\t", header=FALSE)))
+    import_bedfile <- data.frame(purrr::map(methyl_bed_list[i], ~read.csv(.x, sep="\t", header=FALSE, colClasses = classes)))
     #call get_standard_methyl_bed function to clean up the bed file from each sample
-    methyl_data <- get_standard_methyl_bed(Methyl_bed = import_bedfile, Sample_ID = sample_number[i], Methyl_call_type= Methyl_call_type )
+    methyl_data <- get_standard_methyl_bed(Methyl_bed = import_bedfile, Sample_ID = sample_number[i], Methyl_call_type = Methyl_call_type, max_read_depth = max_read_depth )
     #getting the count of nrow for sanity checks
     raw_count <- nrow(methyl_data)
     methyl_data <- unique(methyl_data) #remove duplicates if any
@@ -1218,34 +1262,34 @@ generate_megaframe <- function(methyl_bed_list=All_methyl_beds, Sample_count = 0
     if (raw_count==clean_count){
       cat("QC : No duplicates in ",methyl_bed_list[i] ,", proceeding \n")
     }
-      else {
-        cat("QC : Duplicates found in ",methyl_bed_list[i] ,", cleaning data before proceeding \n")
+    else {
+      cat("QC : Duplicates found in ",methyl_bed_list[i] ,", cleaning data before proceeding \n")
     }
     mylist[(length(mylist) + 1)] <- list(methyl_data) #append it to a list
     #get a list of alphabet codes and bed files - this will be saved in the experimental design starter
     Bedfile_comb <- data.frame(sample_number[i],methyl_bed_list[i])
     experimental_design_df <- rbind(experimental_design_df,Bedfile_comb)
-
+    
   }
   write.table(experimental_design_df, paste(File_prefix, "Experimental_design_starter.csv",sep="_"), row.names=F, col.names = c("ID","Bedfile"), sep=",")
-
+  
   cat("The experimental design file is now available in current directory! \n")
-
+  
   #merge the methyl beds from diff samples into a signle large data frame
   combined_methyl_beds <-Reduce(function(x, y) merge(x, y, by=c("Chromosome", "Position"), all=TRUE), c(mylist) )
-
+  
   #get Strand and CX columns to coalesce.
   Strands <- combined_methyl_beds %>% select(starts_with("Strand_")) %>% colnames()
   combined_methyl_beds$Strand <- do.call(dplyr::coalesce, combined_methyl_beds[Strands])
-
+  
   Cxs <- combined_methyl_beds %>% select(starts_with("CX_")) %>% colnames()
   combined_methyl_beds$CX <- do.call(dplyr::coalesce, combined_methyl_beds[Cxs])
-
+  
   #Remove unwanted columns
   combined_methyl_beds <- combined_methyl_beds  %>% select(-(starts_with("Strand_")), -starts_with(("CX_")))
   #Rearrange
   Megaframe <- combined_methyl_beds[,c(1:2,(ncol(combined_methyl_beds)-1),(ncol(combined_methyl_beds)),3:(ncol(combined_methyl_beds)-2) )]
-
+  
   #sanity check - to ensure no NAs in Strand and CX columns after coalesce
   if ( (sum(is.na(Megaframe$Strand))==0 ) &
        sum(is.na(Megaframe$CX))==0 ) {
@@ -1253,26 +1297,26 @@ generate_megaframe <- function(methyl_bed_list=All_methyl_beds, Sample_count = 0
   } else {
     cat('QC: Strand and CX should not have NAs, re-run the megaframe function \n')
   }
-
+  
   write.table(Megaframe, paste(File_prefix, "MegaFrame.csv",sep="_"), row.names=F, sep=",")
-
+  
   cat("Megaframe is now available in current directory and in the R-env! \n")
-
-
-
+  
+  
+  
   #QC : Filter rows/sample with missing data
   Megaframe$NAs <- rowSums(is.na(Megaframe))
   #make a histogram
-
+  
   cat("QC: The plot provides information about missing data that can be filtered out in the next step by using the filter_NAs parameter \n")
   QCplot <- suppressMessages(ggplot(Megaframe, aes(x=NAs/3))+geom_histogram(bins=30) +
                                labs(title = "Missing data per cytosine") +
                                xlab("Individual") +
                                ylab("Count of rows with missing data")) + theme_bw()
-
+  
   print(QCplot)
   rm(QCplot)
-
+  
   return (Megaframe)
 }
 
@@ -1296,29 +1340,29 @@ generate_megaframe <- function(methyl_bed_list=All_methyl_beds, Sample_count = 0
 #' @export
 
 add_zoom_coords <- function(target, gene_cord_df, geneco_index, gcoord_exist=TRUE, Gene_col="Gene_name") {
-
+  
   if(gcoord_exist==TRUE){
     for (i in 1:nrow(target)) {
       if (gene_cord_df[[Gene_col]][geneco_index]==target$Gene[i]){
         if((target$Position[i]>=Geneco$Low[geneco_index]) & (target$Position[i]<=Geneco$High[geneco_index]) ) {
           target$Zoom_co[i] <- 1 #Gene body region
-
+          
         } else if ((target$Position[i]>=Geneco$Adapt_Low[geneco_index]) & (target$Position[i]<=Geneco$Adapt_High[geneco_index])) {
-            target$Zoom_co[i] <- 2 #Adaptive sequence region
-
+          target$Zoom_co[i] <- 2 #Adaptive sequence region
+          
         } else {
-            target$Zoom_co[i] <- 0 #Region beyond adaptve sequence
+          target$Zoom_co[i] <- 0 #Region beyond adaptve sequence
         }
       } else {
-          print ("Gene Names don't match, please check the gene_coordinate file")
+        print ("Gene Names don't match, please check the gene_coordinate file")
       }
     }
   }
-    else {
-      target$Zoom_co <- "NA"
+  else {
+    target$Zoom_co <- "NA"
   }
   return(target)
-
+  
 }
 
 
@@ -1340,10 +1384,10 @@ add_zoom_coords <- function(target, gene_cord_df, geneco_index, gcoord_exist=TRU
 #' @export
 
 generate_zoomframe <- function(gene_cord_df, MFrame, Gene_col, target_info=TRUE, gene_list=gene_cord_df[[Gene_col]], File_prefix="") {
-
-
+  
+  
   cat("Creating the ZoomFrame! \n")
-
+  
   #create an empty df()
   Final_gene_set <- data.frame()
   for (i in 1:nrow(gene_cord_df)){
@@ -1363,35 +1407,35 @@ generate_zoomframe <- function(gene_cord_df, MFrame, Gene_col, target_info=TRUE,
         Final_gene_set <- rbind(Final_gene_set,Target_df) #append it to a Final dataframe
       }
     }
-      else {
-        print(c(i,"Chromosomes don't match, check the gene_cord_df file "))
+    else {
+      print(c(i,"Chromosomes don't match, check the gene_cord_df file "))
     }
   }
   Final_gene_set <- Final_gene_set[,c(1,(ncol(Final_gene_set)-2),2:4,5:(ncol(Final_gene_set)-3),ncol(Final_gene_set)-1,ncol(Final_gene_set))]
-
+  
   cat("Zoomframe generated, Adding in target info column; Almost done!\n")
-
+  
   #Clean up columns with NAs
   Meth_Unmeth <- Final_gene_set %>% select(starts_with("Meth"), starts_with("UnMeth")) %>% colnames()
   cat("Columns to change NAs -> 0s\n" , Meth_Unmeth)
   #convert NAs to 0s. Here we are not changing the Percent methylation column
   Final_gene_set[Meth_Unmeth][is.na(Final_gene_set[Meth_Unmeth])] <- 0
-
+  
   if (target_info==TRUE){
     for (i in 1:nrow(Final_gene_set)){
-    if (Final_gene_set$Gene[i] %in% gene_list){
-      Final_gene_set$Target_info[i] <- "T"
-    }
+      if (Final_gene_set$Gene[i] %in% gene_list){
+        Final_gene_set$Target_info[i] <- "T"
+      }
       else {
         Final_gene_set$Target_info[i] <- "NT"
-     }
-   }
+      }
+    }
   }
-
-
+  
+  
   write.table(Final_gene_set, paste(File_prefix, "ZoomFrame.csv",sep="_"), row.names=F, sep=",")
   cat("\nZoomframe is available in your current directory!")
-
+  
   return(Final_gene_set)
 }
 
@@ -1424,50 +1468,50 @@ generate_zoomframe <- function(gene_cord_df, MFrame, Gene_col, target_info=TRUE,
 #' @export
 
 generate_methylframe <-function(methyl_bed_list=All_methyl_beds, Sample_count = 0,
-                                Methyl_call_type="Dorado", filter_NAs=0,
+                                Methyl_call_type="Dorado", filter_NAs=0, max_read_depth=100,
                                 gene_info = FALSE, gene_coordinate_file = NULL, Gene_column='',
                                 target_info=FALSE, gene_list = gene_coordinate_file[[Gene_column]],
                                 File_prefix="Sample")
 {
-
+  
   if (typeof(gene_info) != 'logical'){
     stop("gene_info variable needs to be a boolen variable. Default is False")
   }
-
+  
   QC <- is.null(gene_coordinate_file)
   if (gene_info==TRUE & (QC==TRUE | Gene_column=='') ) {
     stop("gene_info is TRUE. Please provide gene-coordinates file, additional values such as Gene_column and re-run the function. Look into documentation for additional information \n")
   }
-
+  
   if (gene_info==TRUE & target_info==FALSE ) {
     stop("gene_info is TRUE, this means the target_info also needs to be TRUE. \n")
   }
-
+  
   Megaframe <- generate_megaframe(methyl_bed_list=methyl_bed_list, Sample_count = 0,
-                                    Methyl_call_type=Methyl_call_type,  File_prefix="Sample")
-
+                                  Methyl_call_type=Methyl_call_type, max_read_depth=max_read_depth, File_prefix="Sample")
+  
   cat('\n NOTE: Filtering NAs default is set to 0, See documentation for ideas on how to use the filter \n')
-
+  
   Megaframe <- Megaframe[Megaframe$NAs<=(filter_NAs*3),]
-
+  
   if (gene_info==TRUE) {
-
+    
     Zoomframe <- generate_zoomframe(gene_cord_df=gene_coordinate_file, MFrame = Megaframe,
                                     Gene_col=Gene_column,
                                     target_info=FALSE, gene_list=gene_list ,
                                     File_prefix=File_prefix)
-
+    
     return(Zoomframe)
   }
   else {
-
+    
     #Duplicating the column for downstream analysis since the functions look for a Zeroth_pos column
     Megaframe$Zeroth_pos <- Megaframe$Position
-
+    
     return(Megaframe)
-
+    
   }
-
+  
 }
 
 
@@ -1492,33 +1536,33 @@ boot_score<-function(sound_score_obj = NA, target_gene= NA, target_start=-1000, 
   rs<-sound_score_obj$region_summary
   ms<-sound_score_obj$methyl_summary
   target_rs<-rs[rs$Gene==target_gene,]
-
+  
   #create data frame to be filled with results of bootstrapping
   boot_out <- data.frame(matrix(ncol = 5, nrow = nboots+1))
-
+  
   #provide column names
   colnames(boot_out) <- c('Gene', 'CG_Score', 'CHG_Score', "CHH_Score", 'Target')
-
+  
   #Calculate precision adjusted score for each change point region
   target_rs <- target_rs %>%
     group_by(cp_group) %>%
     mutate(distance_from_target= min(c(abs(Start-target_start), abs(Start-target_end),abs(Stop-target_start), abs(Stop-target_end))),
            distance_from_target=ifelse(Start<=target_start & Stop >= target_end | Start>=target_start & Stop <= target_end , 0, distance_from_target),
            adjusted_soundscore= ifelse(distance_from_target>10000,0,(1-(0.0001*distance_from_target))*!!as.name(scoring_col_name)))
-
+  
   if(direction_DMR=="negative"){
     target_rs$adjusted_soundscore<-target_rs$adjusted_soundscore*(-1)
   }
-
+  
   if(direction_DMR=="absolute"){
     target_rs$adjusted_soundscore<-abs(target_rs$adjusted_soundscore)
   }
-
+  
   #Find strongest DMR around target gene
   boot_out$CG_Score[1]<-max(target_rs$adjusted_soundscore[target_rs$CX=="CG"])
   boot_out$CHG_Score[1]<-max(target_rs$adjusted_soundscore[target_rs$CX=="CHG"])
   boot_out$CHH_Score[1]<-max(target_rs$adjusted_soundscore[target_rs$CX=="CHH"])
-
+  
   # Write info to Boot_Object
   boot_out$Target[1]<- 1
   boot_out$Gene[1]<-target_gene
@@ -1528,15 +1572,15 @@ boot_score<-function(sound_score_obj = NA, target_gene= NA, target_start=-1000, 
   boot_out$Stop_CHG[1]<-target_rs$Stop[target_rs$adjusted_soundscore==max(target_rs$adjusted_soundscore[target_rs$CX=="CHG"]) & target_rs$CX=="CHG"]
   boot_out$Start_CHH[1]<-target_rs$Start[target_rs$adjusted_soundscore==max(target_rs$adjusted_soundscore[target_rs$CX=="CHH"]) & target_rs$CX=="CHH"]
   boot_out$Stop_CHH[1]<-target_rs$Stop[target_rs$adjusted_soundscore==max(target_rs$adjusted_soundscore[target_rs$CX=="CHH"]) & target_rs$CX=="CHH"]
-
+  
   # Make non-target frame
   nontarget_ms<-ms[ms$Gene!=target_gene,]
-
+  
   # Create lookup table with info for each gene
   nontarget_region_lookup <- nontarget_ms %>%
     group_by(Gene) %>%
     summarise(Start=min(Zeroth_pos), Stop=max(Zeroth_pos))
-
+  
   # Determine if gene is far enough from end of contig to be used for bootstrapping
   nontarget_ms$far_enough<-FALSE
   for(i in 1:nrow(nontarget_region_lookup)){
@@ -1544,10 +1588,10 @@ boot_score<-function(sound_score_obj = NA, target_gene= NA, target_start=-1000, 
   }
   #subset to only include these rows
   nontarget_ms_good_distance<-nontarget_ms[nontarget_ms$far_enough==TRUE,]
-
+  
   # sample from rows
   boot_positions<-sample_n(nontarget_ms_good_distance, nboots, replace=TRUE)
-
+  
   # run bootstrapping
   for(i in 1:nrow(boot_positions)){
     boot_rs <- rs[rs$Gene==boot_positions$Gene[i],]
@@ -1558,18 +1602,18 @@ boot_score<-function(sound_score_obj = NA, target_gene= NA, target_start=-1000, 
       mutate(distance_from_target= min(c(abs(Start-target_start), abs(Start-target_end),abs(Stop-target_start), abs(Stop-target_end))),
              distance_from_target=ifelse(Start<=target_start & Stop >= target_end | Start>=target_start & Stop <= target_end , 0, distance_from_target),
              adjusted_soundscore= ifelse(distance_from_target>10000,0,(1-(0.0001*distance_from_target))*!!as.name(scoring_col_name )))
-
+    
     # Write info to Boot_Object
-
+    
     if(direction_DMR=="negative"){
       boot_rs$adjusted_soundscore<-boot_rs$adjusted_soundscore*(-1)
     }
-
+    
     if(direction_DMR=="absolute"){
       boot_rs$adjusted_soundscore<-abs(boot_rs$adjusted_soundscore)
     }
-
-
+    
+    
     boot_out$CG_Score[i+1]<-max(boot_rs$adjusted_soundscore[boot_rs$CX=="CG"])
     boot_out$CHG_Score[i+1]<-max(boot_rs$adjusted_soundscore[boot_rs$CX=="CHG"])
     boot_out$CHH_Score[i+1]<-max(boot_rs$adjusted_soundscore[boot_rs$CX=="CHH"])
@@ -1581,27 +1625,27 @@ boot_score<-function(sound_score_obj = NA, target_gene= NA, target_start=-1000, 
     boot_out$Stop_CHG[i+1]<-boot_rs$Stop[boot_rs$adjusted_soundscore==max(boot_rs$adjusted_soundscore[boot_rs$CX=="CHG"]) & boot_rs$CX=="CHG"][1]
     boot_out$Start_CHH[i+1]<-boot_rs$Start[boot_rs$adjusted_soundscore==max(boot_rs$adjusted_soundscore[boot_rs$CX=="CHH"]) & boot_rs$CX=="CHH"][1]
     boot_out$Stop_CHH[i+1]<-boot_rs$Stop[boot_rs$adjusted_soundscore==max(boot_rs$adjusted_soundscore[boot_rs$CX=="CHH"]) & boot_rs$CX=="CHH"][1]
-
+    
   }
-
+  
   bo_CG <- boot_out[!duplicated(boot_out[c(1,2)]),]
   bo_CHG <- boot_out[!duplicated(boot_out[c(1,3)]),]
   bo_CHH <- boot_out[!duplicated(boot_out[c(1,4)]),]
-
+  
   bo_CG_order <- bo_CG[order(-bo_CG$CG_Score),]
   bo_CHG_order <- bo_CHG[order(-bo_CHG$CHG_Score),]
   bo_CHH_order <- bo_CHH[order(-bo_CHH$CHH_Score),]
-
+  
   bo_CG_order$rank<-c(seq(1, nrow(bo_CG_order), by=1))
   bo_CHG_order$rank<-c(seq(1, nrow(bo_CHG_order), by=1))
   bo_CHH_order$rank<-c(seq(1, nrow(bo_CHH_order), by=1))
-
+  
   print(paste("Precision Adjusted CG DMR score of:", round(boot_out$CG_Score,3)[1], " For a CG bootstrap p-value of: ", (bo_CG_order[bo_CG_order$Target==1,]$rank)/nrow(bo_CG_order)))
   print(paste("Precision Adjusted CHG DMR score of:", round(boot_out$CHG_Score,3)[1], " For a CHG bootstrap p-value of: ", (bo_CHG_order[bo_CHG_order$Target==1,]$rank)/nrow(bo_CHG_order)))
   print(paste("Precision Adjusted CHH DMR score of:", round(boot_out$CHH_Score,3)[1], " For a CHH bootstrap p-value of: ", (bo_CHH_order[bo_CHH_order$Target==1,]$rank)/nrow(bo_CHH_order)))
-
+  
   print(rbind(target_rs[target_rs$adjusted_soundscore==boot_out$CG_Score[1] & target_rs$adjusted_soundscore!=0,], target_rs[target_rs$adjusted_soundscore==boot_out$CHG_Score[1] & target_rs$adjusted_soundscore!=0,], target_rs[target_rs$adjusted_soundscore==boot_out$CHH_Score[1]& target_rs$adjusted_soundscore!=0,]))
-
+  
   print(paste("Final Bootstrap Adjusted CG DMR Score:", round(bo_CG[1,2]*((bo_CG[1,2]-mean(bo_CG[-1,2], na.rm = TRUE))/sd(bo_CG[,2], na.rm=TRUE)),2)))
   print(paste("Final Bootstrap Adjusted CHG DMR Score:", round(bo_CHG[1,3]*((bo_CHG[1,3]-mean(bo_CHG[-1,3], na.rm = TRUE))/sd(bo_CHG[,3], na.rm = TRUE)),2)))
   print(paste("Final Bootstrap Adjusted CHH DMR Score:", round(bo_CHH[1,4]*((bo_CHH[1,4]-mean(bo_CHH[-1,4], na.rm = TRUE))/sd(bo_CHH[,4], na.rm = TRUE)),2)))
@@ -1610,10 +1654,10 @@ boot_score<-function(sound_score_obj = NA, target_gene= NA, target_start=-1000, 
   print(paste("2-3: Moderate methylation shifts near oligo treatment"))
   print(paste("3-5: Significant methylation shifts near oligo treatment"))
   print(paste("5+: Very Strong evidencce of DMR associated with oligo treatment"))
-
-
+  
+  
   Boot_Obj <- list(boot_out, target_rs)
   names(Boot_Obj) <- c("bootstrap_scores", "target_rs")
   return(Boot_Obj)
-
+  
 }
