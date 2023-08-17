@@ -8,7 +8,8 @@ generate_megaframe(
   methyl_bed_list = All_methyl_beds,
   Sample_count = 0,
   Methyl_call_type = "Dorado",
-  File_prefix = ""
+  File_prefix = "",
+  max_read_depth = 100
 )
 }
 \arguments{

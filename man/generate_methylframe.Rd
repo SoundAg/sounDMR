@@ -9,6 +9,7 @@ generate_methylframe(
   Sample_count = 0,
   Methyl_call_type = "Dorado",
   filter_NAs = 0,
+  max_read_depth = 100,
   gene_info = FALSE,
   gene_coordinate_file = NULL,
   Gene_column = "",

@@ -14,7 +14,7 @@
 
 
 
-library(sounDMR2)
+library(sounDMR)
 
 #-----------------Part 1 : ONT data clean up and standardization----------------
 
