@@ -7,7 +7,8 @@
 get_standard_methyl_bed(
   Methyl_bed = "Methyl.bed",
   Sample_ID = "S1",
-  Methyl_call_type = "Dorado"
+  Methyl_call_type = "Dorado",
+  max_read_depth = 100
 )
 }
 \arguments{
@@ -16,6 +17,8 @@ get_standard_methyl_bed(
 \item{Sample_ID}{(str) - A string that is used inplace of sample name to keep it uniform. We are using an enumerator to generate this based on the number of samples/individuals in the experiment.}
 
 \item{Methyl_call_type}{(str) - A string that includes information about the type of run. Currently this package works on Megalodon , DSP (DeepSignal Plant), Dorado and Bonito. Default call type is Dorado.}
+
+\item{max_read_depth}{(int) - This parameter can be used to filter out rows with high red depth such as highly repetative regions to not be included in the analysis. Default is 0.}
 }
 \value{
 Methyl_bed_sub (df) - Standard data frame methyl file for every individual with Meth, Unmeth and Per_Meth columns
