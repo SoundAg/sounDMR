@@ -1,3 +1,9 @@
+# sounDMR 2.1.1
+
+* Package updated 
+	-Incldues bugfix for saving files with the prefix provided by the user
+	-Includes bugfix for filtering the bedfile containing > max_read_depth paarmeter in the generate_methylframe the value for which can be provided by the user. 
+	
 # sounDMR 2.1.0
 
 * Package updated to handle large bed files incase of whole genome sequencing
