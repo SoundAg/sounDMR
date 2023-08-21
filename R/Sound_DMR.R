@@ -1184,7 +1184,7 @@ get_standard_methyl_bed <-function(Methyl_bed="Methyl.bed", Sample_ID = "S1", Me
   #calculate Meth and Unmeth reads from total reads. This is necessary for downstream Differential Methylation Region (DMR) analysis.
   Methyl_bed[[paste("Meth", Sample_ID, sep="_")]] <- round( (Methyl_bed[[paste("PerMeth", Sample_ID, sep="_")]] * Methyl_bed$Tot_reads)/100 )
   Methyl_bed[[paste("UnMeth", Sample_ID, sep="_")]] <- (Methyl_bed$Tot_reads - Methyl_bed[[paste("Meth", Sample_ID, sep="_")]])
-  Methyl_bed <- Methyl_bed %>% filter(Tot_reads<max_read_depth)
+  Methyl_bed <- Methyl_bed %>% dplyr::filter(Tot_reads< max_read_depth)
   Methyl_bed <- Methyl_bed %>% select(-Tot_reads)
   
   return(Methyl_bed)
@@ -1488,7 +1488,7 @@ generate_methylframe <-function(methyl_bed_list=All_methyl_beds, Sample_count = 
   }
   
   Megaframe <- generate_megaframe(methyl_bed_list=methyl_bed_list, Sample_count = 0,
-                                  Methyl_call_type=Methyl_call_type, max_read_depth=max_read_depth, File_prefix="Sample")
+                                  Methyl_call_type=Methyl_call_type, max_read_depth=max_read_depth, File_prefix=File_prefix)
   
   cat('\n NOTE: Filtering NAs default is set to 0, See documentation for ideas on how to use the filter \n')
   
