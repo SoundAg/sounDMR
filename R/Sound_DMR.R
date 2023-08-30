@@ -1116,6 +1116,7 @@ sound_score <- function(changepoint_OF = dataframe, Statistic="Z_GroupT_small",
 #' A function to split a bed file into multiple file by chromosome.
 #' @param input_file (str) - A string with the name of the input file.
 #' @return output_filelist(list) - A list with the bedfile names of the output files.
+#' @export
 
 split_by_chromosome <- function(input_file) {
   
