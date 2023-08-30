@@ -1,7 +1,9 @@
 # sounDMR <img src="man/figures/logo.png" align="right" height="120" alt="" />
-For more information on the package, as well as examples of the types of downstream analyses that can be run using these results see Colicchio et al., 2023, Scientific Reports : https://www.nature.com/articles/s41598-023-38356-7
+For more information on the package, as well as examples of the types of downstream analyses that can be run using these results see Colicchio et al., 2023, [Scientific Reports](https://www.nature.com/articles/s41598-023-38356-7)
 
 The following document contains a walkthrough of how to get ONT data into the appropriate format to run through sounDMR and a simple tutorial of the functions used to run a differential methylation analysis using sounDMR.
+
+P.S : The whole genome bedmethyl analysis is still in its beta stage. We are currently building a robust code to handle large data and will be releasing the full version soon.  
 
 
 ## Pre-requisites
@@ -89,7 +91,7 @@ Zoom_co : This keeps track of whether the given position is within the gene or i
 methyl_bed <- list.files(path=".",pattern="*.bed")
 
 ```
-
+##### Whole genome bedmethyl processing
 For whole genome bed files, additional steps are necessary to ensure data is in the right format and that it is subset by chromsomes
 to make sure that R doesn't run out of memory. 
 
@@ -110,6 +112,7 @@ chrs_list <- unique(str_extract(bedlist,"ch0"))
 #Note: For whole genome bed files, You can choose 1 at a time to avoid running out of memory
 #update chrs_list[1] for the chromosome of interest
 methyl_bed <- bedlist[grep(chrs_list[1],bedlist)]
+
 ```
 
 Zoomframe is only created if and when the Geneco file is provided. Geneco file should include the following columns at the bare minimum :
@@ -128,6 +131,7 @@ Methylframe <- generate_methylframe(methyl_bed_list=methyl_bed, Sample_count = 0
                                   gene_info = FALSE, gene_coordinate_file = NA, Gene_column=NA,
                                   target_info=FALSE,
                                   File_prefix="Sample")
+
 
 #with gene info
 Methylframe <- generate_methylframe(methyl_bed_list=All_methyl_beds, Sample_count = 0,
