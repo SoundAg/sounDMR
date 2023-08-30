@@ -3,7 +3,7 @@ For more information on the package, as well as examples of the types of downstr
 
 The following document contains a walkthrough of how to get ONT data into the appropriate format to run through sounDMR and a simple tutorial of the functions used to run a differential methylation analysis using sounDMR.
 
-P.S : The whole genome bedmethyl analysis is still in its beta stage. We are currently building a robust code to handle large data and will be releasing the full version soon.  
+Note: The whole genome bedmethyl analysis is still in its beta stage. We are currently building a robust code to handle large data and will be releasing the full version soon.  
 
 
 ## Pre-requisites
@@ -140,7 +140,7 @@ Methylframe <- generate_methylframe(methyl_bed_list=All_methyl_beds, Sample_coun
                                   target_info=TRUE,
                                   File_prefix="Sample")
 ```
-P.S This function also saves an experimental design starter which would require you to include all the details before the analysis, along with megaframe and zoomframe(if gene_info=TRUE) in the current working directory.
+Note: This function also saves an experimental design starter which would require you to include all the details before the analysis, along with megaframe and zoomframe(if gene_info=TRUE) in the current working directory.
 
 #### Clean and Rearrange Data
 This step cleans the data read into the environment and creates "long" formats
