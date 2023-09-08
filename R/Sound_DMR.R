@@ -884,7 +884,7 @@ find_cpt_mean <- function(data, z_col, penalty){
   changepoint_object <- tryCatch(
     {
       # Filter out any rows containing NAs
-      data[is.na(data[[z_col]]) == 0, ]
+      data <- data[is.na(data[[z_col]]) == 0, ]
       
       # Run the changepoing analysis
       changepoint::cpt.mean(data[[z_col]], method = 'PELT',
@@ -975,65 +975,79 @@ changepoint_analysis <- function(whole_df,
                                  target_genes = c(),
                                  save_plots = FALSE,
                                  z_col = 'column') {
+  # Create the list of subset groups
+  if (length(unique(whole_df$Gene)) > 1) {
+    subset_col <- "Gene"
+    whole_df['row_num'] = NA
+    whole_df['group_num'] = NA
+  } else if (length(unique(whole_df$Gene)) == 1) {
+    whole_df <- whole_df %>%
+      mutate(row_num = row_number(),
+             group_num = (row_num %/% 20000) + 1)
+    subset_col <- "group_num"
+    target_genes <- unique(whole_df$group_num)
+  }
+  
+  subsets <- unique(whole_df[[subset_col]])
+  large_genes <- c()
+  
+  # Create the structure of the final df
   everything <- tibble::as_tibble(matrix(ncol = 8))
-  colnames(everything) = c('index', 'CX', 'Zeroth_pos', 'Gene', paste0('MeanMeth_',z_col),
+  colnames(everything) = c('index', 'CX', 'Zeroth_pos', subset_col, paste0('MeanMeth_',z_col),
                            paste0('MeanMethRegion_',z_col), paste0('MethRegionLength_',z_col),
                            paste('MethylGroup',z_col))
   #  remove the first row
   everything <- everything[-1,]
-  genes <- unique(whole_df$Gene)
-  large_genes <- c()
   
   # Create a progress bar
-  print('Running changepoint analysis:')
-  pb = txtProgressBar(min = 0, max = length(genes), initial = 0, style = 3)
+  pb = txtProgressBar(min = 0, max = length(subsets), initial = 0, style = 3)
   #  Work through the genes and cytosine contexts
-  for (i in 1:length(genes)) {
-    #print(gene)
-    gene <- genes[i]
+  for (i in 1:length(subsets)) {
+    subset = subsets[i]
     # Create the filtered df to contain the gene of interest
-    gene_df <- whole_df[whole_df$Gene == gene,]
+    subset_df <- whole_df[whole_df[[subset_col]] == subset,] %>% 
+      select(-row_num, -group_num)
     
     # Create dfs for cytosine contexts
-    gene_df.CG <- gene_df[gene_df$CX == 'CG',]
-    gene_df.CHG <- gene_df[gene_df$CX == 'CHG',]
-    gene_df.CHH <- gene_df[gene_df$CX == 'CHH',]
+    subset_df.CG <- subset_df[subset_df$CX == 'CG',]
+    subset_df.CHG <- subset_df[subset_df$CX == 'CHG',]
+    subset_df.CHH <- subset_df[subset_df$CX == 'CHH',]
     
     # Find the changepoints
-    x.CG <- find_cpt_mean(gene_df.CG, z_col, CG_penalty)
-    x.CHG <- find_cpt_mean(gene_df.CHG, z_col, CHG_penalty)
-    x.CHH <- find_cpt_mean(gene_df.CHH, z_col, CHH_penalty)
+    x.CG <- find_cpt_mean(subset_df.CG, z_col, CG_penalty)
+    x.CHG <- find_cpt_mean(subset_df.CHG, z_col, CHG_penalty)
+    x.CHH <- find_cpt_mean(subset_df.CHH, z_col, CHH_penalty)
     
     # Add in the changepoint info
-    gene_df.CG <- add_changepoint_info(gene_df.CG, x.CG, z_col)
-    gene_df.CHG <- add_changepoint_info(gene_df.CHG, x.CHG, z_col)
-    gene_df.CHH <- add_changepoint_info(gene_df.CHH, x.CHH, z_col)
+    subset_df.CG <- add_changepoint_info(subset_df.CG, x.CG, z_col)
+    subset_df.CHG <- add_changepoint_info(subset_df.CHG, x.CHG, z_col)
+    subset_df.CHH <- add_changepoint_info(subset_df.CHH, x.CHH, z_col)
     
     # Create the plots
-    if (gene %in% target_genes & nrow(gene_df) < 100000) {
-      plot.CG <- plot_changepoints(gene_df.CG, x.CG, gene, CG_penalty, 'CG', z_col)
-      plot.CHG <- plot_changepoints(gene_df.CHG, x.CHG, gene, CHG_penalty, 'CHG', z_col)
-      plot.CHH <- plot_changepoints(gene_df.CHH, x.CHH, gene, CHH_penalty, 'CHH', z_col)
+    if (subset %in% target_genes & nrow(subset_df) < 100000) {
+      plot.CG <- plot_changepoints(subset_df.CG, x.CG, subset, CG_penalty, 'CG', z_col)
+      plot.CHG <- plot_changepoints(subset_df.CHG, x.CHG, subset, CHG_penalty, 'CHG', z_col)
+      plot.CHH <- plot_changepoints(subset_df.CHH, x.CHH, subset, CHH_penalty, 'CHH', z_col)
       print(plot.CG)
       print(plot.CHG)
       print(plot.CHH)
       if (save_plots == T) {
-        png(file=paste0(gene, '_CG_changepoints.png'))
+        png(file=paste0(subset, '_CG_changepoints.png'))
         print(plot.CG)
         dev.off()
-        png(file=paste0(gene, '_CHG_changepoints.png'))
+        png(file=paste0(subset, '_CHG_changepoints.png'))
         print(plot.CHG)
         dev.off()
-        png(file=paste0(gene, '_CHH_changepoints.png'))
+        png(file=paste0(subset, '_CHH_changepoints.png'))
         print(plot.CHH)
         dev.off()
       }
-    } else if (gene %in% target_genes & nrow(gene_df) >= 100000) {
-      large_genes <- c(large_genes, gene)
+    } else if (subset %in% target_genes & nrow(subset_df) >= 100000) {
+      large_genes <- c(large_genes, subset)
     }
     
     # Combine everything into the everything dataframe (rename)
-    everything <- rbind(everything, gene_df.CG, gene_df.CHG, gene_df.CHH)
+    everything <- rbind(everything, subset_df.CG, subset_df.CHG, subset_df.CHH)
     
     # Update progress bar
     setTxtProgressBar(pb, i)
