@@ -963,6 +963,10 @@ plot_changepoints <- function(data, changepoint_obj, gene_name, penalty_val,
 #' @param z_col (str) - the column to run the changepoint analysis on. This
 #' can be any column, but for DMR analysis we recommend using the z scores for
 #' a fixed effect variable.
+#' @param subset_size (int) - the number of cytosines in which to break up the 
+#' whole data into smaller subsets for whole genome analysis. This allows for 
+#' the user to see changepoints on a smaller subset to allow for adjustment of
+#' penalty values. Default value is 35,000.
 #' @return everything (df) - data frame containing the mean changepoint value for the
 #' `z_col` column
 #' @import tibble
@@ -974,7 +978,8 @@ changepoint_analysis <- function(whole_df,
                                  CHH_penalty = int,
                                  target_genes = c(),
                                  save_plots = FALSE,
-                                 z_col = 'column') {
+                                 z_col = 'column',
+                                 subset_size = 35000) {
   # Create the list of subset groups
   if (length(unique(whole_df$Gene)) > 1) {
     subset_col <- "Gene"
@@ -983,7 +988,7 @@ changepoint_analysis <- function(whole_df,
   } else if (length(unique(whole_df$Gene)) == 1) {
     whole_df <- whole_df %>%
       mutate(row_num = row_number(),
-             group_num = (row_num %/% 20000) + 1)
+             group_num = (row_num %/% subset_size) + 1)
     subset_col <- "group_num"
     target_genes <- unique(whole_df$group_num)
   }
