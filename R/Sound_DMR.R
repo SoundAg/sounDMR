@@ -921,8 +921,8 @@ plot_changepoints <- function(data, changepoint_obj, gene_name, penalty_val,
     colnames(segment_data) = c('x', 'xend', 'y', 'yend')
     for (i in 1:length(changepoint_obj@cpts)) {
       group_data = data[data[[paste0('MethGroup_', z_col)]] == i, 'Zeroth_pos']
-      segment_data[i, 'x'] = min(group_data)
-      segment_data[i, 'xend'] = max(group_data)
+      segment_data[i, 'x'] = min(group_data, na.rm = TRUE)
+      segment_data[i, 'xend'] = max(group_data, na.rm = TRUE)
       segment_data[i, 'y'] = changepoint_obj@param.est$mean[i]
       segment_data[i, 'yend'] = changepoint_obj@param.est$mean[i]
     }
@@ -1060,7 +1060,7 @@ changepoint_analysis <- function(whole_df,
   close(pb)
   
   for (gene in large_genes) {
-    print0(gene, ' has more than 100,000 cytosines. Plot not created')
+    warning(gene, ' has more than 100,000 cytosines. Plot not created')
   }
   
   return(everything)
