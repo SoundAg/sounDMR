@@ -10,4 +10,5 @@ LABEL org.opencontainers.image.licenses="GPL-2.0-or-later" \
 RUN install2.r --error devtools
 
 # Install the SounDMR package.
+RUN R -e 'devtools::install_github("jokergoo/GetoptLong")'
 RUN R -e 'devtools::install_github("SoundAg/sounDMR")'
