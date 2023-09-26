@@ -1,3 +1,13 @@
+# sounDMR 2.1.3
+	- Bugfix for exporting max_read_depth parameter
+	- minor enhancements to run generate_megaframe faster
+
+# sounDMR 2.1.2
+
+	- Minor readme updates
+	- Minor updates to the functions
+	- Bugfix in exporting split_by_chromosome function 
+
 # sounDMR 2.1.1
 
 * Package updated 
