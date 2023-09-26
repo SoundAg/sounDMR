@@ -1205,6 +1205,7 @@ get_standard_methyl_bed <-function(Methyl_bed="Methyl.bed", Sample_ID = "S1", Me
 #' @return Megaframe(df) - Clean data frame containing combined methyl bed information for every individual in the experiment.
 #' @import tidyverse
 #' @import stringr
+#' @import data.table
 #' @examples
 #' # Basic usage for methyl_call_type
 #' # generate_megaframe(Methyl_call_type="DSP") # OR
@@ -1252,7 +1253,7 @@ generate_megaframe <- function(methyl_bed_list=All_methyl_beds, Sample_count = 0
     #replace some columns to null to delete them
     classes[c(3, 4, 5, 7, 8, 9)] <- "NULL"
     #import the bed file
-    import_bedfile <- data.frame(purrr::map(methyl_bed_list[i], ~read.csv(.x, sep="\t", header=FALSE, colClasses = classes)))
+    import_bedfile <- data.frame(purrr::map(methyl_bed_list[i], ~fread(.x, sep="\t", header=FALSE, colClasses = classes)))
     #call get_standard_methyl_bed function to clean up the bed file from each sample
     methyl_data <- get_standard_methyl_bed(Methyl_bed = import_bedfile, Sample_ID = sample_number[i], Methyl_call_type = Methyl_call_type, max_read_depth = max_read_depth )
     #getting the count of nrow for sanity checks
@@ -1277,7 +1278,7 @@ generate_megaframe <- function(methyl_bed_list=All_methyl_beds, Sample_count = 0
   cat("The experimental design file is now available in current directory! \n")
   
   #merge the methyl beds from diff samples into a signle large data frame
-  combined_methyl_beds <-Reduce(function(x, y) merge(x, y, by=c("Chromosome", "Position"), all=TRUE), c(mylist) )
+  combined_methyl_beds <-Reduce(function(x, y) full_join(x, y, by=c("Chromosome", "Position")), c(mylist) )
   
   #get Strand and CX columns to coalesce.
   Strands <- combined_methyl_beds %>% select(starts_with("Strand_")) %>% colnames()
