@@ -916,30 +916,26 @@ find_cpt_mean <- function(data, z_col, penalty){
 plot_changepoints <- function(data, changepoint_obj, gene_name, penalty_val,
                               cyt_context, z_col) {
   tryCatch({
+    changepoint_df <- data.frame(matrix(ncol=2, nrow=0))
+    colnames(changepoint_df) <- c('Average Z-score', 'Changepoint Length')
     # Get the segment data
-    segment_data = data.frame(matrix(nrow = 0, ncol = 4))
-    colnames(segment_data) = c('x', 'xend', 'y', 'yend')
     for (i in 1:length(changepoint_obj@cpts)) {
-      group_data = data[data[[paste0('MethGroup_', z_col)]] == i, 'Zeroth_pos']
-      segment_data[i, 'x'] = min(group_data, na.rm = TRUE)
-      segment_data[i, 'xend'] = max(group_data, na.rm = TRUE)
-      segment_data[i, 'y'] = changepoint_obj@param.est$mean[i]
-      segment_data[i, 'yend'] = changepoint_obj@param.est$mean[i]
+      if (i == 1) {
+        start = 0
+      } else {
+        start = changepoint_obj@cpts[i -1] + 1
+      }
+      subset = data[start:changepoint_obj@cpts[i],c(z_col, 'Zeroth_pos')]
+      changepoint_df[i,] = c(mean(subset[[z_col]], na.rm = TRUE), 
+                             max(subset['Zeroth_pos'], na.rm = TRUE) - min(subset['Zeroth_pos'], na.rm = TRUE) + 1)
     }
-    
-    # Create basic plot
-    plot <- data %>%
-      ggplot(aes(x = Zeroth_pos, y = !!sym(z_col))) +
-      geom_line(linewidth = 0.5) +
-      theme(panel.background = element_blank(), axis.line = element_line()) +
-      labs(title = paste('Changepoints for', cyt_context, gene_name, '; penalty',
-                         penalty_val)) +
-      scale_x_continuous(expand = c(0, 0))
-    
-    # Add in the segments
-    plot <- plot + geom_segment(data = segment_data,
-                                aes(x = x, y = y, xend = xend, yend = yend),
-                                color = 'red')
+    plot <- changepoint_df %>%
+      ggplot(aes(x = log(`Changepoint Length` + 1), y = `Average Z-score`)) +
+      geom_point(aes(color = abs(`Average Z-score`))) +
+      theme_bw() +
+      labs(x = "log(1 + Changepoint Length)", y = paste("Average", z_col),
+           color = paste0("abs(", z_col, ")")) +
+      scale_color_gradient(low = 'grey', high = 'red')
     
     return(plot)
   }, error = function(e) {
