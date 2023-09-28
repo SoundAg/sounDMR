@@ -570,17 +570,17 @@ run_binomial <- function(LM, i = int, formula,
 #' @export
 #'
 
-run_model <- function(data, i, Output_Frame, formula, model_type,
+run_model <- function(data, i, Out_in, formula, model_type,
                       individual_name_z = ''){
   if (model_type == 'binomial') {
     tryCatch({
       ith_model_summary <- run_binomial(data, i, formula, 'bobyqa')
-      
+      Out_in <- save_model_summary(i, Out_in, ith_model_summary,individual_name_z)
       # If that model didn't converge, it tried again with a different optimizer, allows ~20% more model convergence
     },error = function(e){tryCatch({ print(paste(i, "No bobyqa Converge, trying Nelder"))
       # Run the model with Nelder_Mead optimizer
       ith_model_summary <- run_binomial(data, i, formula, 'Nelder_Mead')
-      Output_Frame <- save_model_summary(i, Output_Frame, ith_model_summary,individual_name_z)
+      Out_in <- save_model_summary(i, Out_in, ith_model_summary,individual_name_z)
       
     }, error=function(e){print(paste(i, "No Converge"))})
     })
@@ -594,8 +594,8 @@ run_model <- function(data, i, Output_Frame, formula, model_type,
       
       # Save the model output
       ith_model_summary <- as.data.frame(summary(beta_binomial)$coefficients$cond)
-      Output_Frame <- save_model_summary(i, Output_Frame, ith_model_summary,
-                                         individual_name_z)
+      Out_in <- save_model_summary(i, Out_in, ith_model_summary,
+                                   individual_name_z)
     }, error=function(e){
       #print(paste(i, "No Converge"))
       paste(i, 'No Converge')
@@ -603,7 +603,7 @@ run_model <- function(data, i, Output_Frame, formula, model_type,
   } else {
     print('Please choose a model type of "binomial" or "beta-binomial".')
   }
-  return(Output_Frame)
+  return(Out_in)
 }
 
 #' Group DMR Analysis
@@ -625,7 +625,7 @@ run_model <- function(data, i, Output_Frame, formula, model_type,
 #' @return Output_Frame (df) - Output_Frame with the summary statistics from the model
 #' @export
 
-group_DMR <- function(Output_Frame, ZoomFrame_filtered, experimental_design_df, fixed = c('Group'),
+group_DMR <- function(methyl_summary, ZoomFrame_filtered, experimental_design_df, fixed = c('Group'),
                       random = c('Plant'), reads_threshold = 3, model = 'binomial',
                       colnames_of_interest = c('Chromosome', 'Gene', 'Position', 'Strand', 'CX',
                                                'Zeroth_pos', 'Individual')) {
@@ -634,7 +634,7 @@ group_DMR <- function(Output_Frame, ZoomFrame_filtered, experimental_design_df, 
   print(formula)
   
   #  Get the number of columns in the Output_Frame dataframe
-  original_Output_Frame_col_number <- ncol(Output_Frame)
+  original_methyl_summary_col_number <- ncol(methyl_summary)
   
   # The modelling here is the most "delicate" part of the operation.  Options include:
   # (A) cbind(Meth, UnMeth) ~ (1|Plant) + Treatment
@@ -644,7 +644,7 @@ group_DMR <- function(Output_Frame, ZoomFrame_filtered, experimental_design_df, 
   # (E) cbind(Meth, UnMeth) ~ (1|Plant) + Phenotype
   
   # Loop to run groupwise analysis for each BP
-  for(i in 1:nrow(Output_Frame)){
+  for(i in 1:nrow(methyl_summary)){
     
     ZoomFrame_filtered_temp <- ZoomFrame_filtered[i,]  
     # Make long version of input frame for the i'th cytosine row
@@ -665,18 +665,16 @@ group_DMR <- function(Output_Frame, ZoomFrame_filtered, experimental_design_df, 
       # Has to have Y unmethylated reads across all individuials
       if(sum(as.numeric(LM$UnMeth), na.rm=TRUE) >= reads_threshold){
         # Run the model and save the output
-        Output_Frame <- run_model(LM, i, Output_Frame, formula, model)
+        methyl_summary <- run_model(LM, i, methyl_summary, formula, model)
         rm(LM, LUM, ZoomFrame_filtered_temp)
       }
     }
   }
   #  Replace NA values in these columns with 0s
-  Output_Frame[,original_Output_Frame_col_number:ncol(Output_Frame)][is.na(Output_Frame[,original_Output_Frame_col_number:ncol(Output_Frame)])] = 0
+  methyl_summary[,original_methyl_summary_col_number:ncol(methyl_summary)][is.na(methyl_summary[,original_methyl_summary_col_number:ncol(methyl_summary)])] = 0
   
-  return(Output_Frame)
+  return(methyl_summary)
 }
-
-
 
 #' Individual DMR Analysis
 #'
@@ -687,7 +685,7 @@ group_DMR <- function(Output_Frame, ZoomFrame_filtered, experimental_design_df, 
 #' @return Output_Frame (df) - a data frame with additional columns
 #' @export
 
-individual_DMR <- function(Output_Frame, ZoomFrame_filtered, experimental_design_df,
+individual_DMR <- function(methylsummary, ZoomFrame_filtered, experimental_design_df,
                            fixed = c('Group'), random = c('Individual'),
                            reads_threshold = 3, control = 'C', model = 'beta-binomial',
                            colnames_of_interest = c('Chromosome', 'Gene', 'Position',
@@ -700,10 +698,10 @@ individual_DMR <- function(Output_Frame, ZoomFrame_filtered, experimental_design
   Exp_ID_Treated <- experimental_design_df[experimental_design_df$Group == 'T',]
   
   # Create a progress bar
-  pb = txtProgressBar(min = 0, max = nrow(Output_Frame), initial = 0, style = 3)
+  pb = txtProgressBar(min = 0, max = nrow(methylsummary), initial = 0, style = 3)
   
   #This model compares each of the treated individuals with the whole group of control individuals.
-  for(i in 1:nrow(Output_Frame)){
+  for(i in 1:nrow(methylsummary)){
     #First steps up until "For k in ..." are the same as group models.
     LM <- pivot_and_subset(ZoomFrame_filtered[i,], 'Meth', 'Meth',
                            colnames_of_interest)
@@ -725,17 +723,16 @@ individual_DMR <- function(Output_Frame, ZoomFrame_filtered, experimental_design
         #Now, if has more than 2 meth and unmeth cytosines, runs the statistical model
         if(sum(as.numeric(LMEX$UnMeth), na.rm=TRUE) > reads_threshold & sum(as.numeric(LMEX$Meth), na.rm=TRUE) > reads_threshold){
           # Run the model
-          Output_Frame = run_model(LMEX, i, Output_Frame, formula, model,
-                                   individual_name_z = individual_name_z)
+          methylsummary = run_model(LMEX, i, methylsummary, formula, model,
+                                    individual_name_z = individual_name_z)
         }
       }
     }
     setTxtProgressBar(pb, i)
   }
   close(pb)
-  return(Output_Frame)
+  return(methylsummary)
 }
-
 
 #' DMR Analysis
 #'
@@ -748,29 +745,28 @@ individual_DMR <- function(Output_Frame, ZoomFrame_filtered, experimental_design
 #' @return Output_Frame (df)
 #' @export
 
-find_DMR <- function(Output_Frame, dmr_obj, fixed = c('Group'),
-                     random = c('Plant'), reads_threshold = 3,
-                     model, control = '', analysis_type) {
+find_DMR<- function(ms, dmr_obj, fixed = c('Group'),
+                    random = c('Plant'), reads_threshold = 3,
+                    model, control = '', analysis_type) {
   # The required columns
   colnames_of_interest <- c('Chromosome', 'Gene', 'Position', 'Strand', 'CX',
                             'Zeroth_pos', 'Plant')
   if (tolower(analysis_type) == 'group') {
-    Output_Frame = group_DMR(Output_Frame, dmr_obj$ZoomFrame_filtered,
-                             dmr_obj$experimental_design_df,
-                             fixed = fixed,random = random, colnames_of_interest,
-                             reads_threshold = reads_threshold, model = model)
+    Output_Frame <- group_DMR(ms, dmr_obj$ZoomFrame_filtered,
+                              dmr_obj$experimental_design_df,
+                              fixed = fixed,random = random, colnames_of_interest,
+                              reads_threshold = reads_threshold, model = model)
   } else if (tolower(analysis_type) == 'individual') {
-    Output_Frame = individual_DMR(Output_Frame, dmr_obj$ZoomFrame_filtered,
-                                  dmr_obj$experimental_design_df,
-                                  fixed = fixed, random = random,
-                                  reads_threshold = reads_threshold,
-                                  control = control, model = model)
+    Output_Frame <- individual_DMR(ms, dmr_obj$ZoomFrame_filtered,
+                                   dmr_obj$experimental_design_df,
+                                   fixed = fixed, random = random,
+                                   reads_threshold = reads_threshold,
+                                   control = control, model = model)
   } else {
     print(paste(analysis_type, 'analysis type not supported. Please try "individual" or "group"'))
   }
   return(Output_Frame)
 }
-
 
 #'  Find the Columns for Changepoint Analysis
 #'
@@ -1225,7 +1221,7 @@ generate_megaframe <- function(methyl_bed_list=All_methyl_beds, Sample_count = 0
   }
   
   if(Methyl_call_type==""){
-    cat("Methylation call type not given, using default type i.e Dorado \n")
+    message("Methylation call type not given, using default type i.e Dorado \n")
   }
   
   
@@ -1243,7 +1239,7 @@ generate_megaframe <- function(methyl_bed_list=All_methyl_beds, Sample_count = 0
   sample_number_list <- unlist(sample_number_list)
   sample_number <- sample_number_list[(Sample_count+1):(Sample_count+length(methyl_bed_list))]
   
-  cat("Creating the Megaframe \n")
+  message("Creating the Megaframe")
   
   mylist <- c()
   experimental_design_df <- data.frame()
@@ -1275,7 +1271,7 @@ generate_megaframe <- function(methyl_bed_list=All_methyl_beds, Sample_count = 0
   }
   write.table(experimental_design_df, paste(File_prefix, "Experimental_design_starter.csv",sep="_"), row.names=F, col.names = c("ID","Bedfile"), sep=",")
   
-  cat("The experimental design file is now available in current directory! \n")
+  message("The experimental design file is now available in current directory!")
   
   #merge the methyl beds from diff samples into a signle large data frame
   combined_methyl_beds <-Reduce(function(x, y) full_join(x, y, by=c("Chromosome", "Position")), c(mylist) )
@@ -1302,7 +1298,7 @@ generate_megaframe <- function(methyl_bed_list=All_methyl_beds, Sample_count = 0
   
   write.table(Megaframe, paste(File_prefix, "MegaFrame.csv",sep="_"), row.names=F, sep=",")
   
-  cat("Megaframe is now available in current directory and in the R-env! \n")
+  message("Megaframe is now available in current directory and in the R-env!")
   
   
   
@@ -1388,7 +1384,7 @@ add_zoom_coords <- function(target, gene_cord_df, geneco_index, gcoord_exist=TRU
 generate_zoomframe <- function(gene_cord_df, MFrame, Gene_col, target_info=TRUE, gene_list=gene_cord_df[[Gene_col]], File_prefix="") {
   
   
-  cat("Creating the ZoomFrame! \n")
+  message("Creating the ZoomFrame!")
   
   #create an empty df()
   Final_gene_set <- data.frame()
@@ -1415,11 +1411,12 @@ generate_zoomframe <- function(gene_cord_df, MFrame, Gene_col, target_info=TRUE,
   }
   Final_gene_set <- Final_gene_set[,c(1,(ncol(Final_gene_set)-2),2:4,5:(ncol(Final_gene_set)-3),ncol(Final_gene_set)-1,ncol(Final_gene_set))]
   
-  cat("Zoomframe generated, Adding in target info column; Almost done!\n")
+  message("Zoomframe generated, Adding in target info column; Almost done!")
   
   #Clean up columns with NAs
   Meth_Unmeth <- Final_gene_set %>% select(starts_with("Meth"), starts_with("UnMeth")) %>% colnames()
-  cat("Columns to change NAs -> 0s\n" , Meth_Unmeth)
+  cat("Changing NAs in Methylated and UnMethylated columns to 0\n")
+  cat("Columns :", Meth_Unmeth, "\n" )
   #convert NAs to 0s. Here we are not changing the Percent methylation column
   Final_gene_set[Meth_Unmeth][is.na(Final_gene_set[Meth_Unmeth])] <- 0
   
@@ -1436,7 +1433,7 @@ generate_zoomframe <- function(gene_cord_df, MFrame, Gene_col, target_info=TRUE,
   
   
   write.table(Final_gene_set, paste(File_prefix, "ZoomFrame.csv",sep="_"), row.names=F, sep=",")
-  cat("\nZoomframe is available in your current directory!")
+  message("Zoomframe is available in your current directory!")
   
   return(Final_gene_set)
 }
@@ -1464,7 +1461,8 @@ generate_zoomframe <- function(gene_cord_df, MFrame, Gene_col, target_info=TRUE,
 #' @examples
 #' # Basic usage for methyl_call_type
 #' # 1. With gene coordinate file
-#' # generate_methylframe(methyl_bed_list= <list_of_BedMethyl files>, gene_info = TRUE, gene_cordinate_file = <File with gene info>, Gene_col=<Gene Name/Gene ID>, target_info=TRUE, gene_list = <list of target genes>)
+#' # generate_methylframe(methyl_bed_list= <list_of_BedMethyl files>, gene_info = TRUE, gene_cordinate_file = <File with gene info>, 
+#' #                       Gene_col=<Gene Name/Gene ID>, target_info=TRUE, gene_list = <list of target genes>)
 #' # 2. Without gene cooridnate file
 #' # generate_methylframe(methyl_bed_list= <list_of_BedMethyl files>, gene_info = FALSE )
 #' @export
@@ -1472,7 +1470,7 @@ generate_zoomframe <- function(gene_cord_df, MFrame, Gene_col, target_info=TRUE,
 generate_methylframe <-function(methyl_bed_list=All_methyl_beds, Sample_count = 0,
                                 Methyl_call_type="Dorado", filter_NAs=0, max_read_depth=100,
                                 gene_info = FALSE, gene_coordinate_file = NULL, Gene_column='',
-                                target_info=FALSE, gene_list = gene_coordinate_file[[Gene_column]],
+                                target_info=TRUE, gene_list = gene_coordinate_file[[Gene_column]],
                                 File_prefix="Sample")
 {
   
@@ -1485,14 +1483,14 @@ generate_methylframe <-function(methyl_bed_list=All_methyl_beds, Sample_count = 
     stop("gene_info is TRUE. Please provide gene-coordinates file, additional values such as Gene_column and re-run the function. Look into documentation for additional information \n")
   }
   
-  if (gene_info==TRUE & target_info==FALSE ) {
-    stop("gene_info is TRUE, this means the target_info also needs to be TRUE. \n")
+  if (gene_info==TRUE & target_info==TRUE ) {
+    message("NOTE: target_info is TRUE. Using all genes in the Geneco as targets. Use gene_list parameter to change \n")
   }
   
-  Megaframe <- generate_megaframe(methyl_bed_list=methyl_bed_list, Sample_count = 0,
+  Megaframe <- generate_megaframe(methyl_bed_list=methyl_bed_list, Sample_count = Sample_count,
                                   Methyl_call_type=Methyl_call_type, max_read_depth=max_read_depth, File_prefix=File_prefix)
   
-  cat('\n NOTE: Filtering NAs default is set to 0, See documentation for ideas on how to use the filter \n')
+  message('\nNOTE: Filtering NAs default is set to 0, See documentation for ideas on how to use the filter \n')
   
   Megaframe <- Megaframe[Megaframe$NAs<=(filter_NAs*3),]
   
@@ -1500,7 +1498,7 @@ generate_methylframe <-function(methyl_bed_list=All_methyl_beds, Sample_count = 
     
     Zoomframe <- generate_zoomframe(gene_cord_df=gene_coordinate_file, MFrame = Megaframe,
                                     Gene_col=Gene_column,
-                                    target_info=FALSE, gene_list=gene_list ,
+                                    target_info=target_info, gene_list=gene_list ,
                                     File_prefix=File_prefix)
     
     return(Zoomframe)
@@ -1515,9 +1513,6 @@ generate_methylframe <-function(methyl_bed_list=All_methyl_beds, Sample_count = 
   }
   
 }
-
-
-
 
 #' Boot_score
 #' @description

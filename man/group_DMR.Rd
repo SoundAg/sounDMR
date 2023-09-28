@@ -5,7 +5,7 @@
 \title{Group DMR Analysis}
 \usage{
 group_DMR(
-  Output_Frame,
+  methyl_summary,
   ZoomFrame_filtered,
   experimental_design_df,
   fixed = c("Group"),
@@ -17,9 +17,6 @@ group_DMR(
 )
 }
 \arguments{
-\item{Output_Frame}{(df) - the read depth and methylation
-change information}
-
 \item{ZoomFrame_filtered}{(df) - the percent methylation information}
 
 \item{experimental_design_df}{(df) - the experimental design}
@@ -41,6 +38,9 @@ greater than or equal to this threshold in order to be considered for the model.
 
 \item{colnames_of_interest}{\emph{optional} (list of strings) - the columns to keep
 in the analysis}
+
+\item{Output_Frame}{(df) - the read depth and methylation
+change information}
 }
 \value{
 Output_Frame (df) - Output_Frame with the summary statistics from the model

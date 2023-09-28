@@ -4,15 +4,13 @@
 \alias{run_model}
 \title{Run Model}
 \usage{
-run_model(data, i, Output_Frame, formula, model_type, individual_name_z = "")
+run_model(data, i, Out_in, formula, model_type, individual_name_z = "")
 }
 \arguments{
 \item{data}{(df) - the information to put in the model, usually this is
 in "long" format}
 
 \item{i}{(int) - the row number}
-
-\item{Output_Frame}{(df) - all the summary information}
 
 \item{formula}{(formula) - the formula to use in the model}
 

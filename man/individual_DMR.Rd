@@ -5,7 +5,7 @@
 \title{Individual DMR Analysis}
 \usage{
 individual_DMR(
-  Output_Frame,
+  methylsummary,
   ZoomFrame_filtered,
   experimental_design_df,
   fixed = c("Group"),
@@ -18,9 +18,6 @@ individual_DMR(
 )
 }
 \arguments{
-\item{Output_Frame}{(df) - the read depth and methylation
-change information}
-
 \item{ZoomFrame_filtered}{(df) - the percent methylation information}
 
 \item{experimental_design_df}{(df) - the experimental design}
