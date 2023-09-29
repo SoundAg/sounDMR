@@ -566,21 +566,21 @@ run_binomial <- function(LM, i = int, formula,
 #' @inheritParams run_binomial
 #' @param individual_name_z (str) - *optional* the name of the z column when running
 #' individual DMR analysis
-#' @return Output_Frame (df) - updated with the summary data from the model
+#' @return Input_frame (df) - updated with the summary data from the model
 #' @export
 #'
 
-run_model <- function(data, i, Out_in, formula, model_type,
+run_model <- function(data, i, Input_frame, formula, model_type,
                       individual_name_z = ''){
   if (model_type == 'binomial') {
     tryCatch({
       ith_model_summary <- run_binomial(data, i, formula, 'bobyqa')
-      Out_in <- save_model_summary(i, Out_in, ith_model_summary,individual_name_z)
+      Input_frame <- save_model_summary(i, Input_frame, ith_model_summary,individual_name_z)
       # If that model didn't converge, it tried again with a different optimizer, allows ~20% more model convergence
     },error = function(e){tryCatch({ print(paste(i, "No bobyqa Converge, trying Nelder"))
       # Run the model with Nelder_Mead optimizer
       ith_model_summary <- run_binomial(data, i, formula, 'Nelder_Mead')
-      Out_in <- save_model_summary(i, Out_in, ith_model_summary,individual_name_z)
+      Input_frame <- save_model_summary(i, Input_frame, ith_model_summary,individual_name_z)
       
     }, error=function(e){print(paste(i, "No Converge"))})
     })
@@ -594,7 +594,7 @@ run_model <- function(data, i, Out_in, formula, model_type,
       
       # Save the model output
       ith_model_summary <- as.data.frame(summary(beta_binomial)$coefficients$cond)
-      Out_in <- save_model_summary(i, Out_in, ith_model_summary,
+      Input_frame <- save_model_summary(i, Input_frame, ith_model_summary,
                                    individual_name_z)
     }, error=function(e){
       #print(paste(i, "No Converge"))
@@ -603,14 +603,14 @@ run_model <- function(data, i, Out_in, formula, model_type,
   } else {
     print('Please choose a model type of "binomial" or "beta-binomial".')
   }
-  return(Out_in)
+  return(Input_frame)
 }
 
 #' Group DMR Analysis
 #'
 #' To run a binomial model to compare the methylation between groups
 #'
-#' @param Output_Frame (df) - the read depth and methylation
+#' @param methyl_summary (df) - the read depth and methylation
 #' change information
 #' @param ZoomFrame_filtered (df) - the percent methylation information
 #' @param experimental_design_df (df) - the experimental design
@@ -622,7 +622,7 @@ run_model <- function(data, i, Out_in, formula, model_type,
 #' the threshold. Both the methylated and unmethylated samples need a read depth
 #' greater than or equal to this threshold in order to be considered for the model.
 #' @inheritParams subset_cols
-#' @return Output_Frame (df) - Output_Frame with the summary statistics from the model
+#' @return methyl_summary (df) - Output_Frame with the summary statistics from the model
 #' @export
 
 group_DMR <- function(methyl_summary, ZoomFrame_filtered, experimental_design_df, fixed = c('Group'),
@@ -745,19 +745,19 @@ individual_DMR <- function(methylsummary, ZoomFrame_filtered, experimental_desig
 #' @return Output_Frame (df)
 #' @export
 
-find_DMR<- function(ms, dmr_obj, fixed = c('Group'),
+find_DMR<- function(methyl_summary, dmr_obj, fixed = c('Group'),
                     random = c('Plant'), reads_threshold = 3,
                     model, control = '', analysis_type) {
   # The required columns
   colnames_of_interest <- c('Chromosome', 'Gene', 'Position', 'Strand', 'CX',
                             'Zeroth_pos', 'Plant')
   if (tolower(analysis_type) == 'group') {
-    Output_Frame <- group_DMR(ms, dmr_obj$ZoomFrame_filtered,
+    Output_Frame <- group_DMR(methyl_summary, dmr_obj$ZoomFrame_filtered,
                               dmr_obj$experimental_design_df,
                               fixed = fixed,random = random, colnames_of_interest,
                               reads_threshold = reads_threshold, model = model)
   } else if (tolower(analysis_type) == 'individual') {
-    Output_Frame <- individual_DMR(ms, dmr_obj$ZoomFrame_filtered,
+    Output_Frame <- individual_DMR(methyl_summary, dmr_obj$ZoomFrame_filtered,
                                    dmr_obj$experimental_design_df,
                                    fixed = fixed, random = random,
                                    reads_threshold = reads_threshold,

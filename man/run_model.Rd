@@ -4,7 +4,7 @@
 \alias{run_model}
 \title{Run Model}
 \usage{
-run_model(data, i, Out_in, formula, model_type, individual_name_z = "")
+run_model(data, i, Input_frame, formula, model_type, individual_name_z = "")
 }
 \arguments{
 \item{data}{(df) - the information to put in the model, usually this is
@@ -18,7 +18,7 @@ in "long" format}
 individual DMR analysis}
 }
 \value{
-Output_Frame (df) - updated with the summary data from the model
+Input_frame (df) - updated with the summary data from the model
 }
 \description{
 Function to run the correct model

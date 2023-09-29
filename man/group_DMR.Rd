@@ -17,6 +17,9 @@ group_DMR(
 )
 }
 \arguments{
+\item{methyl_summary}{(df) - the read depth and methylation
+change information}
+
 \item{ZoomFrame_filtered}{(df) - the percent methylation information}
 
 \item{experimental_design_df}{(df) - the experimental design}
@@ -38,12 +41,9 @@ greater than or equal to this threshold in order to be considered for the model.
 
 \item{colnames_of_interest}{\emph{optional} (list of strings) - the columns to keep
 in the analysis}
-
-\item{Output_Frame}{(df) - the read depth and methylation
-change information}
 }
 \value{
-Output_Frame (df) - Output_Frame with the summary statistics from the model
+methyl_summary (df) - Output_Frame with the summary statistics from the model
 }
 \description{
 To run a binomial model to compare the methylation between groups

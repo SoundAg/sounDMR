@@ -5,7 +5,7 @@
 \title{DMR Analysis}
 \usage{
 find_DMR(
-  ms,
+  methyl_summary,
   dmr_obj,
   fixed = c("Group"),
   random = c("Plant"),
