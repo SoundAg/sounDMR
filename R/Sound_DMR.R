@@ -1162,6 +1162,46 @@ split_by_chromosome <- function(input_file) {
   return(output_filelist)
 }
 
+#' split_by_chunk
+#' @description
+#' A function to split a bed file into multiple chunks.
+#'
+#' @param input_file (str) - A string witht the name of the input file.
+#' @param chunk_size (int) - Maximum amount of nucleotides per chunk.
+
+split_by_chunk <- function(input_file, chunk_size, output_dir = "./chunks/") {
+  # Get base name
+  base_name <- tools::file_path_sans_ext(basename(input_file))
+  # Create the output directory if it doesn't exist
+  dir.create(output_dir, showWarnings = FALSE, recursive = TRUE)
+  # Read the BED file into a data frame
+  bed_data <- read.table(input_file, header = FALSE, col.names = c("chromosome", "start", "end", "4", "5", "6", "7", "8", "9", "10", "11", "12"))
+  # Initialize variables for chunk creation
+  current_chunk_start <- bed_data$start[1]
+  current_chunk_end <- chunk_size
+  current_chunk <- bed_data[1, ]
+  chunk_number <- 1
+  # Iterate through the BED regions
+  for (i in 1:nrow(bed_data)) {
+    region_start <- bed_data$start[i]
+    # Check if the current region belongs to the current chunk
+    if (region_start <= current_chunk_end) {
+      current_chunk <- rbind(current_chunk, bed_data[i, ])
+    } else {
+      # Save the current chunk to a file
+      output_file <- file.path(output_dir, paste0(base_name, "_chunk_", chunk_number, ".bed"))
+      write.table(current_chunk, file = output_file, sep = "\t", quote = FALSE, col.names = FALSE, row.names = FALSE)      
+      # Start a new chunk
+      current_chunk_start <- region_start
+      current_chunk_end <- (chunk_number+1) * chunk_size
+      current_chunk <- bed_data[i, ]
+      chunk_number <- chunk_number + 1
+    }
+  }
+  # Add the last chunk to a file
+  output_file <- file.path(output_dir, paste0(base_name, "_chunk_", chunk_number, ".bed"))
+  write.table(current_chunk, file = output_file, sep = "\t", quote = FALSE, col.names = FALSE, row.names = FALSE)
+}
 
 #' get_standard_methyl_bed
 #' @description
