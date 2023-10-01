@@ -1175,33 +1175,22 @@ split_by_chunk <- function(input_file, chunk_size, output_dir = "./chunks/") {
   # Create the output directory if it doesn't exist
   dir.create(output_dir, showWarnings = FALSE, recursive = TRUE)
   # Read the BED file into a data frame
-  bed_data <- read.table(input_file, header = FALSE, col.names = c("chromosome", "start", "end", "4", "5", "6", "7", "8", "9", "10", "11", "12"))
+  bed_df <- read.table(input_file, header = FALSE, col.names = c("chromosome", "start", "end", "4", "5", "6", "7", "8", "9", "10", "11", "12"))
   # Initialize variables for chunk creation
-  current_chunk_start <- bed_data$start[1]
-  current_chunk_end <- chunk_size
-  current_chunk <- bed_data[1, ]
-  chunk_number <- 1
-  # Iterate through the BED regions
-  for (i in 1:nrow(bed_data)) {
-    region_start <- bed_data$start[i]
-    # Check if the current region belongs to the current chunk
-    if (region_start <= current_chunk_end) {
-      current_chunk <- rbind(current_chunk, bed_data[i, ])
-    } else {
-      # Save the current chunk to a file
-      output_file <- file.path(output_dir, paste0(base_name, "_chunk_", chunk_number, ".bed"))
-      write.table(current_chunk, file = output_file, sep = "\t", quote = FALSE, col.names = FALSE, row.names = FALSE)      
-      # Start a new chunk
-      current_chunk_start <- region_start
-      current_chunk_end <- (chunk_number+1) * chunk_size
-      current_chunk <- bed_data[i, ]
-      chunk_number <- chunk_number + 1
-    }
+  num_rows <- nrow(bed_df)
+  # Get number of chunks
+  total_chunks <- ceiling(num_rows/chunk_size)
+  lower_val <- 0
+  upper_val <- chunk_size
+  for (chunk_n in 1:total_chunks) {
+    chunk <- subset(bed_df, start >= lower_val & start <= upper_val)
+    output_file <- file.path(output_dir, paste0(base_name, "_chunk_", chunk_n, ".bed"))
+    write.table(chunk, file = output_file, sep = "\t", quote = FALSE, col.names = FALSE, row.names = FALSE)    
+    lower_val <- lower_val + chunk_size
+    upper_val <- upper_val + chunk_size
   }
-  # Add the last chunk to a file
-  output_file <- file.path(output_dir, paste0(base_name, "_chunk_", chunk_number, ".bed"))
-  write.table(current_chunk, file = output_file, sep = "\t", quote = FALSE, col.names = FALSE, row.names = FALSE)
 }
+
 
 #' get_standard_methyl_bed
 #' @description
