@@ -1177,7 +1177,7 @@ split_by_chunk <- function(input_file, chunk_size, output_dir = "./chunks/") {
   # Read the BED file into a data frame
   bed_df <- read.table(input_file, header = FALSE, col.names = c("chromosome", "start", "end", "4", "5", "6", "7", "8", "9", "10", "11", "12"))
   # Initialize variables for chunk creation
-  num_rows <- nrow(bed_df)
+  num_rows <- tail(bed_df$start, n = 1)
   # Get number of chunks
   total_chunks <- ceiling(num_rows/chunk_size)
   lower_val <- 0
