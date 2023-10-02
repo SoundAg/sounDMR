@@ -1176,14 +1176,14 @@ split_by_chunk <- function(input_file, chunk_size, output_dir = "./chunks/") {
   dir.create(output_dir, showWarnings = FALSE, recursive = TRUE)
   # Read the BED file into a data frame
   bed_df <- read.table(input_file, header = FALSE, col.names = c("chromosome", "start", "end", "4", "5", "6", "7", "8", "9", "10", "11", "12"))
-  # Initialize variables for chunk creation
-  num_rows <- tail(bed_df$start, n = 1)
+  nucls <- tail(bed_df$start, n = 1)
   # Get number of chunks
-  total_chunks <- ceiling(num_rows/chunk_size)
+  total_chunks <- ceiling(nucls/chunk_size)
+  # Initialize variables for chunk creation
   lower_val <- 0
   upper_val <- chunk_size
   for (chunk_n in 1:total_chunks) {
-    chunk <- subset(bed_df, start >= lower_val & start <= upper_val)
+    chunk <- subset(bed_df, start > lower_val & start <= upper_val)
     output_file <- file.path(output_dir, paste0(base_name, "_chunk_", chunk_n, ".bed"))
     write.table(chunk, file = output_file, sep = "\t", quote = FALSE, col.names = FALSE, row.names = FALSE)    
     lower_val <- lower_val + chunk_size
