@@ -1,6 +1,6 @@
 Package: sounDMR
 Title: DMR analysis from ONT data
-Version: 2.1.3
+Version: 2.2.0
 Authors@R: c(
     person("Tom", "Cairns", email = "t.cairns@sound.ag", role = c("aut", "cre")),
     person("Jack", "Colicchio", email = "j.colicchio@sound.ag", role = "aut"),
@@ -24,6 +24,6 @@ Depends:
 	stringr,
 	tibble,
 	tidyr,
-       data.table,
+    data.table,
 	tidyverse
 URL: https://github.com/SoundAg/sounDMR

@@ -13,7 +13,7 @@ generate_methylframe(
   gene_info = FALSE,
   gene_coordinate_file = NULL,
   Gene_column = "",
-  target_info = FALSE,
+  target_info = TRUE,
   gene_list = gene_coordinate_file[[Gene_column]],
   File_prefix = "Sample"
 )
@@ -53,7 +53,8 @@ NOTE:
 \examples{
 # Basic usage for methyl_call_type
 # 1. With gene coordinate file
-# generate_methylframe(methyl_bed_list= <list_of_BedMethyl files>, gene_info = TRUE, gene_cordinate_file = <File with gene info>, Gene_col=<Gene Name/Gene ID>, target_info=TRUE, gene_list = <list of target genes>)
+# generate_methylframe(methyl_bed_list= <list_of_BedMethyl files>, gene_info = TRUE, gene_cordinate_file = <File with gene info>, 
+#                       Gene_col=<Gene Name/Gene ID>, target_info=TRUE, gene_list = <list of target genes>)
 # 2. Without gene cooridnate file
 # generate_methylframe(methyl_bed_list= <list_of_BedMethyl files>, gene_info = FALSE )
 }
