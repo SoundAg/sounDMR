@@ -5,7 +5,7 @@
 \title{Group DMR Analysis}
 \usage{
 group_DMR(
-  methyl_summary,
+  methyl_sum,
   ZoomFrame_filtered,
   experimental_design_df,
   fixed = c("Group"),
@@ -17,7 +17,7 @@ group_DMR(
 )
 }
 \arguments{
-\item{methyl_summary}{(df) - the read depth and methylation
+\item{methyl_sum}{(df) - the read depth and methylation
 change information}
 
 \item{ZoomFrame_filtered}{(df) - the percent methylation information}
@@ -43,7 +43,7 @@ greater than or equal to this threshold in order to be considered for the model.
 in the analysis}
 }
 \value{
-methyl_summary (df) - Output_Frame with the summary statistics from the model
+methyl_sum (df) - Output_Frame with the summary statistics from the model
 }
 \description{
 To run a binomial model to compare the methylation between groups

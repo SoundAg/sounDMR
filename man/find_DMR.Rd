@@ -5,7 +5,7 @@
 \title{DMR Analysis}
 \usage{
 find_DMR(
-  methyl_summary,
+  methyl_sum,
   dmr_obj,
   fixed = c("Group"),
   random = c("Plant"),
@@ -16,6 +16,9 @@ find_DMR(
 )
 }
 \arguments{
+\item{methyl_sum}{(df) - the read depth and methylation
+change information}
+
 \item{dmr_obj}{(list) - the dmr_object containing the experimental design df and zoomFrame_filtered}
 
 \item{fixed}{(str) - the fixed effects variables. Note: this

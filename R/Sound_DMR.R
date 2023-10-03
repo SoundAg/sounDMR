@@ -566,21 +566,21 @@ run_binomial <- function(LM, i = int, formula,
 #' @inheritParams run_binomial
 #' @param individual_name_z (str) - *optional* the name of the z column when running
 #' individual DMR analysis
-#' @return Input_frame (df) - updated with the summary data from the model
+#' @return input_frame (df) - updated with the summary data from the model
 #' @export
 #'
 
-run_model <- function(data, i, Input_frame, formula, model_type,
+run_model <- function(data, i, input_frame, formula, model_type,
                       individual_name_z = ''){
   if (model_type == 'binomial') {
     tryCatch({
       ith_model_summary <- run_binomial(data, i, formula, 'bobyqa')
-      Input_frame <- save_model_summary(i, Input_frame, ith_model_summary,individual_name_z)
+      input_frame <- save_model_summary(i, input_frame, ith_model_summary,individual_name_z)
       # If that model didn't converge, it tried again with a different optimizer, allows ~20% more model convergence
     },error = function(e){tryCatch({ print(paste(i, "No bobyqa Converge, trying Nelder"))
       # Run the model with Nelder_Mead optimizer
       ith_model_summary <- run_binomial(data, i, formula, 'Nelder_Mead')
-      Input_frame <- save_model_summary(i, Input_frame, ith_model_summary,individual_name_z)
+      input_frame <- save_model_summary(i, input_frame, ith_model_summary,individual_name_z)
       
     }, error=function(e){print(paste(i, "No Converge"))})
     })
@@ -594,7 +594,7 @@ run_model <- function(data, i, Input_frame, formula, model_type,
       
       # Save the model output
       ith_model_summary <- as.data.frame(summary(beta_binomial)$coefficients$cond)
-      Input_frame <- save_model_summary(i, Input_frame, ith_model_summary,
+      input_frame <- save_model_summary(i, input_frame, ith_model_summary,
                                    individual_name_z)
     }, error=function(e){
       #print(paste(i, "No Converge"))
@@ -603,14 +603,14 @@ run_model <- function(data, i, Input_frame, formula, model_type,
   } else {
     print('Please choose a model type of "binomial" or "beta-binomial".')
   }
-  return(Input_frame)
+  return(input_frame)
 }
 
 #' Group DMR Analysis
 #'
 #' To run a binomial model to compare the methylation between groups
 #'
-#' @param methyl_summary (df) - the read depth and methylation
+#' @param methyl_sum (df) - the read depth and methylation
 #' change information
 #' @param ZoomFrame_filtered (df) - the percent methylation information
 #' @param experimental_design_df (df) - the experimental design
@@ -622,10 +622,10 @@ run_model <- function(data, i, Input_frame, formula, model_type,
 #' the threshold. Both the methylated and unmethylated samples need a read depth
 #' greater than or equal to this threshold in order to be considered for the model.
 #' @inheritParams subset_cols
-#' @return methyl_summary (df) - Output_Frame with the summary statistics from the model
+#' @return methyl_sum (df) - Output_Frame with the summary statistics from the model
 #' @export
 
-group_DMR <- function(methyl_summary, ZoomFrame_filtered, experimental_design_df, fixed = c('Group'),
+group_DMR <- function(methyl_sum, ZoomFrame_filtered, experimental_design_df, fixed = c('Group'),
                       random = c('Plant'), reads_threshold = 3, model = 'binomial',
                       colnames_of_interest = c('Chromosome', 'Gene', 'Position', 'Strand', 'CX',
                                                'Zeroth_pos', 'Individual')) {
@@ -634,7 +634,7 @@ group_DMR <- function(methyl_summary, ZoomFrame_filtered, experimental_design_df
   print(formula)
   
   #  Get the number of columns in the Output_Frame dataframe
-  original_methyl_summary_col_number <- ncol(methyl_summary)
+  original_methyl_sum_col_number <- ncol(methyl_sum)
   
   # The modelling here is the most "delicate" part of the operation.  Options include:
   # (A) cbind(Meth, UnMeth) ~ (1|Plant) + Treatment
@@ -644,7 +644,7 @@ group_DMR <- function(methyl_summary, ZoomFrame_filtered, experimental_design_df
   # (E) cbind(Meth, UnMeth) ~ (1|Plant) + Phenotype
   
   # Loop to run groupwise analysis for each BP
-  for(i in 1:nrow(methyl_summary)){
+  for(i in 1:nrow(methyl_sum)){
     
     ZoomFrame_filtered_temp <- ZoomFrame_filtered[i,]  
     # Make long version of input frame for the i'th cytosine row
@@ -665,15 +665,15 @@ group_DMR <- function(methyl_summary, ZoomFrame_filtered, experimental_design_df
       # Has to have Y unmethylated reads across all individuials
       if(sum(as.numeric(LM$UnMeth), na.rm=TRUE) >= reads_threshold){
         # Run the model and save the output
-        methyl_summary <- run_model(LM, i, methyl_summary, formula, model)
+        methyl_sum <- run_model(LM, i, methyl_sum, formula, model)
         rm(LM, LUM, ZoomFrame_filtered_temp)
       }
     }
   }
   #  Replace NA values in these columns with 0s
-  methyl_summary[,original_methyl_summary_col_number:ncol(methyl_summary)][is.na(methyl_summary[,original_methyl_summary_col_number:ncol(methyl_summary)])] = 0
+  methyl_sum[,original_methyl_sum_col_number:ncol(methyl_sum)][is.na(methyl_sum[,original_methyl_sum_col_number:ncol(methyl_sum)])] = 0
   
-  return(methyl_summary)
+  return(methyl_sum)
 }
 
 #' Individual DMR Analysis
@@ -682,10 +682,10 @@ group_DMR <- function(methyl_summary, ZoomFrame_filtered, experimental_design_df
 #'
 #' @inheritParams group_DMR
 #' @param control (str) - the control variable
-#' @return Output_Frame (df) - a data frame with additional columns
+#' @return methyl_sum (df) - a data frame with additional columns
 #' @export
 
-individual_DMR <- function(methylsummary, ZoomFrame_filtered, experimental_design_df,
+individual_DMR <- function(methyl_sum, ZoomFrame_filtered, experimental_design_df,
                            fixed = c('Group'), random = c('Individual'),
                            reads_threshold = 3, control = 'C', model = 'beta-binomial',
                            colnames_of_interest = c('Chromosome', 'Gene', 'Position',
@@ -698,10 +698,10 @@ individual_DMR <- function(methylsummary, ZoomFrame_filtered, experimental_desig
   Exp_ID_Treated <- experimental_design_df[experimental_design_df$Group == 'T',]
   
   # Create a progress bar
-  pb = txtProgressBar(min = 0, max = nrow(methylsummary), initial = 0, style = 3)
+  pb = txtProgressBar(min = 0, max = nrow(methyl_sum), initial = 0, style = 3)
   
   #This model compares each of the treated individuals with the whole group of control individuals.
-  for(i in 1:nrow(methylsummary)){
+  for(i in 1:nrow(methyl_sum)){
     #First steps up until "For k in ..." are the same as group models.
     LM <- pivot_and_subset(ZoomFrame_filtered[i,], 'Meth', 'Meth',
                            colnames_of_interest)
@@ -723,7 +723,7 @@ individual_DMR <- function(methylsummary, ZoomFrame_filtered, experimental_desig
         #Now, if has more than 2 meth and unmeth cytosines, runs the statistical model
         if(sum(as.numeric(LMEX$UnMeth), na.rm=TRUE) > reads_threshold & sum(as.numeric(LMEX$Meth), na.rm=TRUE) > reads_threshold){
           # Run the model
-          methylsummary = run_model(LMEX, i, methylsummary, formula, model,
+          methyl_sum = run_model(LMEX, i, methyl_sum, formula, model,
                                     individual_name_z = individual_name_z)
         }
       }
@@ -731,7 +731,7 @@ individual_DMR <- function(methylsummary, ZoomFrame_filtered, experimental_desig
     setTxtProgressBar(pb, i)
   }
   close(pb)
-  return(methylsummary)
+  return(methyl_sum)
 }
 
 #' DMR Analysis
@@ -745,19 +745,19 @@ individual_DMR <- function(methylsummary, ZoomFrame_filtered, experimental_desig
 #' @return Output_Frame (df)
 #' @export
 
-find_DMR<- function(methyl_summary, dmr_obj, fixed = c('Group'),
+find_DMR<- function(methyl_sum, dmr_obj, fixed = c('Group'),
                     random = c('Plant'), reads_threshold = 3,
                     model, control = '', analysis_type) {
   # The required columns
   colnames_of_interest <- c('Chromosome', 'Gene', 'Position', 'Strand', 'CX',
                             'Zeroth_pos', 'Plant')
   if (tolower(analysis_type) == 'group') {
-    Output_Frame <- group_DMR(methyl_summary, dmr_obj$ZoomFrame_filtered,
+    Output_Frame <- group_DMR(methyl_sum, dmr_obj$ZoomFrame_filtered,
                               dmr_obj$experimental_design_df,
                               fixed = fixed,random = random, colnames_of_interest,
                               reads_threshold = reads_threshold, model = model)
   } else if (tolower(analysis_type) == 'individual') {
-    Output_Frame <- individual_DMR(methyl_summary, dmr_obj$ZoomFrame_filtered,
+    Output_Frame <- individual_DMR(methyl_sum, dmr_obj$ZoomFrame_filtered,
                                    dmr_obj$experimental_design_df,
                                    fixed = fixed, random = random,
                                    reads_threshold = reads_threshold,
@@ -1110,13 +1110,17 @@ sound_score <- function(changepoint_OF = dataframe, Statistic="Z_GroupT_small",
 #' split_by_chromosome
 #' @description
 #' A function to split a bed file into multiple file by chromosome.
+#' It will create a new directory per each chromosome.
 #' @param input_file (str) - A string with the name of the input file.
 #' @return output_filelist(list) - A list with the bedfile names of the output files.
 #' @export
 
 split_by_chromosome <- function(input_file) {
-  
+
   output_filelist <- list()
+  # get only dir
+  fields <- strsplit(input_file, "/")[[1]]
+  input_dir <- paste(fields[1:(length(fields) - 1)], collapse = "/")
   # Get name without extension
   base_name <- tools::file_path_sans_ext(basename(input_file))
   # Open the input file for reading
@@ -1130,9 +1134,13 @@ split_by_chromosome <- function(input_file) {
     # Split the line by tab to get the chromosome
     fields <- strsplit(line, "\t")[[1]]
     chromosome <- fields[1]
+    # Create the output directory for the chromosome if not already created
+    if (!dir.exists(file.path(input_dir, paste0("chr_", chromosome)))) {
+      dir.create(file.path(input_dir, paste0("chr_", chromosome)))
+    }
     # Create the output file for the chromosome if not already opened
     if (!(chromosome %in% names(output_files))) {
-      output_file <- paste0(base_name, "_chr_", chromosome, ".bed") 
+      output_file <- file.path(input_dir, paste0("chr_", chromosome), paste0(base_name, ".bed"))
       output_filelist <- append(output_filelist, output_file)
       output_files[[chromosome]] <- file(output_file, "w")
     }
@@ -1150,6 +1158,34 @@ split_by_chromosome <- function(input_file) {
   return(output_filelist)
 }
 
+#' split_by_chunk
+#' @description
+#' A function to split a bed file into multiple chunks.
+#'
+#' @param input_file (str) - A string with the name of the input file.
+#' @param chunk_size (int) - Maximum region/position in the bedfile per chunk.
+
+split_by_chunk <- function(input_file, chunk_size, output_dir = "./chunks/") {
+  # Get base name
+  base_name <- tools::file_path_sans_ext(basename(input_file))
+  # Create the output directory if it doesn't exist
+  dir.create(output_dir, showWarnings = FALSE, recursive = TRUE)
+  # Read the BED file into a data frame
+  bed_df <- read.table(input_file, header = FALSE, col.names = c("chromosome", "start", "end", "4", "5", "6", "7", "8", "9", "10", "11", "12"))
+  nucls <- tail(bed_df$start, n = 1)
+  # Get number of chunks
+  total_chunks <- ceiling(nucls/chunk_size)
+  # Initialize variables for chunk creation
+  lower_val <- 0
+  upper_val <- chunk_size
+  for (chunk_n in 1:total_chunks) {
+    chunk <- subset(bed_df, start > lower_val & start <= upper_val)
+    output_file <- file.path(output_dir, paste0(base_name, "_chunk_", chunk_n, ".bed"))
+    write.table(chunk, file = output_file, sep = "\t", quote = FALSE, col.names = FALSE, row.names = FALSE)    
+    lower_val <- lower_val + chunk_size
+    upper_val <- upper_val + chunk_size
+  }
+}
 
 #' get_standard_methyl_bed
 #' @description
@@ -1211,7 +1247,7 @@ get_standard_methyl_bed <-function(Methyl_bed="Methyl.bed", Sample_ID = "S1", Me
 
 
 
-generate_megaframe <- function(methyl_bed_list=All_methyl_beds, Sample_count = 0, Methyl_call_type="Dorado", File_prefix="", max_read_depth=100){
+generate_megaframe <- function(methyl_bed_list=All_methyl_beds, Sample_count, Methyl_call_type="Dorado", File_prefix="", max_read_depth=100){
   
   #QC
   QC <- missing(methyl_bed_list)

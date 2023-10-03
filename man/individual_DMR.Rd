@@ -5,7 +5,7 @@
 \title{Individual DMR Analysis}
 \usage{
 individual_DMR(
-  methylsummary,
+  methyl_sum,
   ZoomFrame_filtered,
   experimental_design_df,
   fixed = c("Group"),
@@ -18,6 +18,9 @@ individual_DMR(
 )
 }
 \arguments{
+\item{methyl_sum}{(df) - the read depth and methylation
+change information}
+
 \item{ZoomFrame_filtered}{(df) - the percent methylation information}
 
 \item{experimental_design_df}{(df) - the experimental design}
@@ -43,7 +46,7 @@ greater than or equal to this threshold in order to be considered for the model.
 in the analysis}
 }
 \value{
-Output_Frame (df) - a data frame with additional columns
+methyl_sum (df) - a data frame with additional columns
 }
 \description{
 Purpose: to run individual DMR analysis

@@ -2,6 +2,8 @@
 	- find_DMR() local variable bugfix
 	- Parameter fix for generate_methylframe() 
 	- Minor updates to upstream functions
+	- Added split_by_chunk that enables creating manageable chunks of the bedfile
+	- updated split_by_chrom0some
 
 # sounDMR 2.1.3
 	- Bugfix for exporting max_read_depth parameter
