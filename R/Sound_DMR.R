@@ -1111,16 +1111,14 @@ sound_score <- function(changepoint_OF = dataframe, Statistic="Z_GroupT_small",
 #' @description
 #' A function to split a bed file into multiple file by chromosome.
 #' It will create a new directory per each chromosome.
-#' @param input_file (str) - A string with the name of the input file.
+#' @param input_file (str) - A string with the name of the input file. It uses a 
+#' relative path.
 #' @return output_filelist(list) - A list with the bedfile names of the output files.
 #' @export
 
 split_by_chromosome <- function(input_file) {
 
   output_filelist <- list()
-  # get only dir
-  fields <- strsplit(input_file, "/")[[1]]
-  input_dir <- paste(fields[1:(length(fields) - 1)], collapse = "/")
   # Get name without extension
   base_name <- tools::file_path_sans_ext(basename(input_file))
   # Open the input file for reading
@@ -1135,12 +1133,12 @@ split_by_chromosome <- function(input_file) {
     fields <- strsplit(line, "\t")[[1]]
     chromosome <- fields[1]
     # Create the output directory for the chromosome if not already created
-    if (!dir.exists(file.path(input_dir, paste0("chr_", chromosome)))) {
-      dir.create(file.path(input_dir, paste0("chr_", chromosome)))
+    if (!dir.exists(file.path(paste0("chr_", chromosome)))) {
+      dir.create(file.path(paste0("chr_", chromosome)))
     }
     # Create the output file for the chromosome if not already opened
     if (!(chromosome %in% names(output_files))) {
-      output_file <- file.path(input_dir, paste0("chr_", chromosome), paste0(base_name, ".bed"))
+      output_file <- file.path(paste0("chr_", chromosome), paste0(base_name, ".bed"))
       output_filelist <- append(output_filelist, output_file)
       output_files[[chromosome]] <- file(output_file, "w")
     }
