@@ -1119,6 +1119,7 @@ sound_score <- function(changepoint_OF = dataframe, Statistic="Z_GroupT_small",
 split_by_chromosome <- function(input_file) {
 
   output_filelist <- list()
+  current_path <- getwd()
   # Get name without extension
   base_name <- tools::file_path_sans_ext(basename(input_file))
   # Open the input file for reading
@@ -1133,12 +1134,12 @@ split_by_chromosome <- function(input_file) {
     fields <- strsplit(line, "\t")[[1]]
     chromosome <- fields[1]
     # Create the output directory for the chromosome if not already created
-    if (!dir.exists(file.path(paste0("chr_", chromosome)))) {
-      dir.create(file.path(paste0("chr_", chromosome)))
+    if (!dir.exists(file.path(current_path, paste0("chr_", chromosome)))) {
+      dir.create(file.path(current_path, paste0("chr_", chromosome)))
     }
     # Create the output file for the chromosome if not already opened
     if (!(chromosome %in% names(output_files))) {
-      output_file <- file.path(paste0("chr_", chromosome), paste0(base_name, ".bed"))
+      output_file <- file.path(current_path, paste0("chr_", chromosome), paste0(base_name, ".bed"))
       output_filelist <- append(output_filelist, output_file)
       output_files[[chromosome]] <- file(output_file, "w")
     }
