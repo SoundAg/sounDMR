@@ -1149,9 +1149,11 @@ split_by_chromosome <- function(input_file) {
     writeLines(line, output_files[[chromosome]])
   }
   # Close all output file connections
+  i <- 1
   for (chr in names(output_files)) {
     close(output_files[[chr]])
-    cat(paste("Chromosome", chr, "data has been written to", output_file, "\n"))
+    cat(paste("Chromosome", chr, "data has been written to", output_filelist[[i]], "\n"))
+    i <- i + 1
   }
   # Close the input file connection
   close(con)
