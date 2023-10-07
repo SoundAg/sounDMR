@@ -1135,7 +1135,7 @@ split_by_chromosome <- function(input_file) {
     # Split the line by tab to get the chromosome
     fields <- strsplit(line, "\t")[[1]]
     chromosome <- fields[1]
-    if (startsWith('scaf', tolower(chromosome))) {
+    if (startsWith(tolower(chromosome), "scaf")) {
       next
     }
     # Create the output directory for the chromosome if not already created
