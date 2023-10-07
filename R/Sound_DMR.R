@@ -1135,6 +1135,9 @@ split_by_chromosome <- function(input_file) {
     # Split the line by tab to get the chromosome
     fields <- strsplit(line, "\t")[[1]]
     chromosome <- fields[1]
+    if (startsWith('scaf', tolower(chromosome))) {
+      next
+    }
     # Create the output directory for the chromosome if not already created
     if (!dir.exists(file.path(input_dir, paste0("chr_", chromosome)))) {
       dir.create(file.path(input_dir, paste0("chr_", chromosome)))
