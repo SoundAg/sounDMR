@@ -7,7 +7,8 @@
 split_by_chromosome(input_file)
 }
 \arguments{
-\item{input_file}{(str) - A string with the name of the input file.}
+\item{input_file}{(str) - A string with the name of the input file. It uses a
+fill (absolute) path.}
 }
 \value{
 output_filelist(list) - A list with the bedfile names of the output files.

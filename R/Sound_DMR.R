@@ -1135,6 +1135,9 @@ split_by_chromosome <- function(input_file) {
     # Split the line by tab to get the chromosome
     fields <- strsplit(line, "\t")[[1]]
     chromosome <- fields[1]
+    if (startsWith(tolower(chromosome), "scaf")) {
+      next
+    }
     # Create the output directory for the chromosome if not already created
     if (!dir.exists(file.path(input_dir, paste0("chr_", chromosome)))) {
       dir.create(file.path(input_dir, paste0("chr_", chromosome)))
@@ -1149,11 +1152,9 @@ split_by_chromosome <- function(input_file) {
     writeLines(line, output_files[[chromosome]])
   }
   # Close all output file connections
-  i <- 1
   for (chr in names(output_files)) {
     close(output_files[[chr]])
-    cat(paste("Chromosome", chr, "data has been written to", output_filelist[[i]], "\n"))
-    i <- i + 1
+    cat(paste("Chromosome", chr, "data has been written to", output_file, "\n"))
   }
   # Close the input file connection
   close(con)

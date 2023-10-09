@@ -1,3 +1,6 @@
+# sounDMR 2.2.1
+	- Updated split_by_chromosome() to ignore scaffolds in the bed file
+
 # sounDMR 2.2.0
 	- find_DMR() local variable bugfix
 	- Parameter fix for generate_methylframe() 
