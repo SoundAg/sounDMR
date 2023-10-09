@@ -1049,7 +1049,7 @@ changepoint_analysis <- function(whole_df,
   } else {
     subset_col <- "Chromosome"
     target_genes <- unique(whole_df$Chromosome)
-    message(paste("Running changepoint analysis on chromosomes:", 
+    message(paste("Running whole genome changepoint analysis on chromosomes:", 
                   paste(target_genes, collapse = " ")))
   }
   
