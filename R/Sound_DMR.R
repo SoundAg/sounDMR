@@ -891,16 +891,16 @@ find_cpt_mean <- function(data, z_col, penalty){
                             penalty = 'Manual', pen.value = penalty)
     }, error = function(e) {
       #print(e)
-      print('No changepoints found, data contains 1 or 0 rows')
+      warning('No changepoints found, data contains 1 or 0 rows')
       return(NULL)
     })
   return(changepoint_object)
 }
 
 
-#' Plot Changepoints
+#' Plot Changepoints Volcano
 #'
-#' Plot the changepoint data
+#' Create a volcano plot of the changepoints
 #'
 #' @param data (df) - containing the cytosines with their percent methylation
 #' @param changepoint_obj (S4) - the S4 object created from finding the changepoints
@@ -908,13 +908,13 @@ find_cpt_mean <- function(data, z_col, penalty){
 #' @param penalty_val (int) - the penalty value being used
 #' @param cyt_context (str) - the cytosine context
 #' @param z_col (str) - the column upon which the changepoints are calculated
-#' @return changepoint_plot (plot) - the plot of the changepoints
+#' @return changepoint_plot (plot) - the volcano plot of the changepoints
 #' @import ggplot2
 #' @import tidyverse
 #' @export
 
-plot_changepoints <- function(data, changepoint_obj, gene_name, penalty_val,
-                              cyt_context, z_col) {
+plot_changepoints_volcano <- function(data, changepoint_obj, gene_name, 
+                                      penalty_val, cyt_context, z_col) {
   tryCatch({
     changepoint_df <- data.frame(matrix(ncol=2, nrow=0))
     colnames(changepoint_df) <- c('Average Z-score', 'Changepoint Length')
@@ -934,13 +934,81 @@ plot_changepoints <- function(data, changepoint_obj, gene_name, penalty_val,
       geom_point(aes(color = abs(`Average Z-score`))) +
       theme_bw() +
       labs(x = "log(1 + Changepoint Length)", y = paste("Average", z_col),
-           color = paste0("abs(", z_col, ")")) +
+           color = paste0("abs(", z_col, ")"),
+           title = paste("Changepoints for", cyt_context, gene_name, "; penalty",
+                       penalty_val)) +
       scale_color_gradient(low = 'grey', high = 'red')
     
+    print(plot)
     return(plot)
   }, error = function(e) {
-    return(paste('Figure could not be created for:', gene_name))
+    return(warning('Figure could not be created for:', gene_name))
   })
+}
+
+
+#' Plot Changepoints Line
+#'
+#' Create a line plot of the changepoints
+#'
+#' @param data (df) - containing the cytosines with their percent methylation
+#' @param changepoint_obj (S4) - the S4 object created from finding the changepoints
+#' @param gene_name (str) - the name of the gene
+#' @param penalty_val (int) - the penalty value being used
+#' @param cyt_context (str) - the cytosine context
+#' @param z_col (str) - the column upon which the changepoints are calculated
+#' @return changepoint_plot (plot) - the line plot of the changepoints
+#' @import ggplot2
+#' @import tidyverse
+#' @export
+
+plot_changepoints_line <- function(data, changepoint_obj, gene_name, 
+                                   penalty_val, cyt_context, z_col) {
+  tryCatch({
+    # Get the segment data
+    segment_data = data.frame(matrix(nrow = 0, ncol = 4))
+    colnames(segment_data) = c('x', 'xend', 'y', 'yend')
+    for (i in 1:length(changepoint_obj@cpts)) {
+      group_data = data[data[[paste0('MethGroup_', z_col)]] == i, 'Zeroth_pos']
+      segment_data[i, 'x'] = min(group_data)
+      segment_data[i, 'xend'] = max(group_data)
+      segment_data[i, 'y'] = changepoint_obj@param.est$mean[i]
+      segment_data[i, 'yend'] = changepoint_obj@param.est$mean[i]
+    }
+    
+    # Create basic plot
+    plot <- data %>%
+      ggplot(aes(x = Zeroth_pos, y = !!sym(z_col))) +
+      geom_line(linewidth = 0.5) +
+      theme(panel.background = element_blank(), axis.line = element_line()) +
+      labs(title = paste('Changepoints for', cyt_context, gene_name, '; penalty',
+                         penalty_val)) +
+      scale_x_continuous(expand = c(0, 0))
+    
+    # Add in the segments
+    plot <- plot + geom_segment(data = segment_data,
+                                aes(x = x, y = y, xend = xend, yend = yend),
+                                color = 'red')
+    print(plot)
+    return(plot)
+  }, error = function(e) {
+    return(warning('Figure could not be created for:', gene_name))
+  })
+}
+
+#' Save Plot
+#' 
+#' Save a plot
+#' 
+#' @param file_name (str) - the name of the filepath
+#' @param plot_obj (obj) - the plot object to save
+#' @export
+#' 
+
+save_plot <- function(file_name, plot_obj) {
+  png(file=file_name)
+  print(plot_obj)
+  dev.off()
 }
 
 
@@ -959,10 +1027,9 @@ plot_changepoints <- function(data, changepoint_obj, gene_name, penalty_val,
 #' @param z_col (str) - the column to run the changepoint analysis on. This
 #' can be any column, but for DMR analysis we recommend using the z scores for
 #' a fixed effect variable.
-#' @param subset_size (int) - the number of cytosines in which to break up the 
-#' whole data into smaller subsets for whole genome analysis. This allows for 
-#' the user to see changepoints on a smaller subset to allow for adjustment of
-#' penalty values. Default value is 35,000.
+#' @param whole_genome (boolean) - whether to run changepoints on a whole genome
+#' scale. Setting to TRUE will find changepoints per chromosome. Setting to FALSE
+#' will find changepoints per gene. 
 #' @return everything (df) - data frame containing the mean changepoint value for the
 #' `z_col` column
 #' @import tibble
@@ -975,18 +1042,15 @@ changepoint_analysis <- function(whole_df,
                                  target_genes = c(),
                                  save_plots = FALSE,
                                  z_col = 'column',
-                                 subset_size = 35000) {
+                                 whole_genome = FALSE) {
   # Create the list of subset groups
-  if (length(unique(whole_df$Gene)) > 1) {
+  if (whole_genome == FALSE) {
     subset_col <- "Gene"
-    whole_df['row_num'] = NA
-    whole_df['group_num'] = NA
-  } else if (length(unique(whole_df$Gene)) == 1) {
-    whole_df <- whole_df %>%
-      mutate(row_num = row_number(),
-             group_num = (row_num %/% subset_size) + 1)
-    subset_col <- "group_num"
-    target_genes <- unique(whole_df$group_num)
+  } else {
+    subset_col <- "Chromosome"
+    target_genes <- unique(whole_df$Chromosome)
+    message(paste("Running changepoint analysis on chromosomes:", 
+                  paste(target_genes, collapse = " ")))
   }
   
   subsets <- unique(whole_df[[subset_col]])
@@ -1006,8 +1070,7 @@ changepoint_analysis <- function(whole_df,
   for (i in 1:length(subsets)) {
     subset = subsets[i]
     # Create the filtered df to contain the gene of interest
-    subset_df <- whole_df[whole_df[[subset_col]] == subset,] %>% 
-      select(-row_num, -group_num)
+    subset_df <- whole_df[whole_df[[subset_col]] == subset,]
     
     # Create dfs for cytosine contexts
     subset_df.CG <- subset_df[subset_df$CX == 'CG',]
@@ -1025,23 +1088,53 @@ changepoint_analysis <- function(whole_df,
     subset_df.CHH <- add_changepoint_info(subset_df.CHH, x.CHH, z_col)
     
     # Create the plots
-    if (subset %in% target_genes & nrow(subset_df) < 100000) {
-      plot.CG <- plot_changepoints(subset_df.CG, x.CG, subset, CG_penalty, 'CG', z_col)
-      plot.CHG <- plot_changepoints(subset_df.CHG, x.CHG, subset, CHG_penalty, 'CHG', z_col)
-      plot.CHH <- plot_changepoints(subset_df.CHH, x.CHH, subset, CHH_penalty, 'CHH', z_col)
-      print(plot.CG)
-      print(plot.CHG)
-      print(plot.CHH)
-      if (save_plots == T) {
-        png(file=paste0(subset, '_CG_changepoints.png'))
-        print(plot.CG)
-        dev.off()
-        png(file=paste0(subset, '_CHG_changepoints.png'))
-        print(plot.CHG)
-        dev.off()
-        png(file=paste0(subset, '_CHH_changepoints.png'))
-        print(plot.CHH)
-        dev.off()
+    if (subset %in% target_genes) {
+      vol_plot.CG <- plot_changepoints_volcano(data=subset_df.CG, 
+                                               changepoint_obj=x.CG,
+                                               gene_name=subset, 
+                                               penalty_val=CG_penalty,
+                                               cyt_context='CG', z_col=z_col)
+      vol_plot.CHG <- plot_changepoints_volcano(data=subset_df.CHG, 
+                                                changepoint_obj=x.CHG,
+                                                gene_name=subset,
+                                                penalty_val=CHG_penalty,
+                                                cyt_context='CHG', z_col=z_col)
+      vol_plot.CHH <- plot_changepoints_volcano(data=subset_df.CHH, 
+                                                changepoint_obj=x.CHH,
+                                                gene_name=subset,
+                                                penalty_val=CHH_penalty,
+                                                cyt_context='CHH', z_col=z_col)
+      if (save_plots == TRUE & nrow(subset_df) < 100000) {
+        # Create line plots
+        line_plot.CG <- plot_changepoints_line(data=subset_df.CG,
+                                               changepoint_obj=x.CG,
+                                               gene_name=subset,
+                                               penalty_val=CG_penalty,
+                                               cyt_context='CG', z_col=z_col)
+        line_plot.CHG <- plot_changepoints_line(data=subset_df.CHG,
+                                                changepoint_obj=x.CHG,
+                                                gene_name=subset,
+                                                penalty_val=CHG_penalty,
+                                                cyt_context='CHG', z_col=z_col)
+        line_plot.CHH <- plot_changepoints_line(data=subset_df.CHH,
+                                                changepoint_obj=x.CHH,
+                                                gene_name=subset,
+                                                penalty_val=CHH_penalty,
+                                                cyt_context='CHH', z_col=z_col)
+        
+        # Save the plots
+        save_plot(file_name=paste0(subset, '_CG_changepoints_line.png'), 
+                  plot_obj=line_plot.CG)
+        save_plot(file_name=paste0(subset, '_CG_changepoints_volcano.png'), 
+                  plot_obj=vol_plot.CG)
+        save_plot(file_name=paste0(subset, '_CHG_changepoints_line.png'), 
+                  plot_obj=line_plot.CHG)
+        save_plot(file_name=paste0(subset, '_CHG_changepoints_volcano.png'), 
+                  plot_obj=vol_plot.CHG)
+        save_plot(file_name=paste0(subset, '_CHH_changepoints_line.png'), 
+                  plot_obj=line_plot.CHH)
+        save_plot(file_name=paste0(subset, '_CHH_changepoints_volcano.png'), 
+                  plot_obj=vol_plot.CHH)
       }
     } else if (subset %in% target_genes & nrow(subset_df) >= 100000) {
       large_genes <- c(large_genes, subset)
