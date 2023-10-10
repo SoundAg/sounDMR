@@ -1109,7 +1109,8 @@ sound_score <- function(changepoint_OF = dataframe, Statistic="Z_GroupT_small",
 
 #' split_by_chromosome
 #' @description
-#' A function to split a bed file into multiple file by chromosome.
+#' A function to split a bed file into multiple file by chromosome. 
+#' Note: scaffolds are ignored in the function
 #' It will create a new directory per each chromosome.
 #' @param input_file (str) - A string with the name of the input file. It uses a 
 #' fill (absolute) path.
@@ -1152,10 +1153,13 @@ split_by_chromosome <- function(input_file) {
     writeLines(line, output_files[[chromosome]])
   }
   # Close all output file connections
+ i <- 1
   for (chr in names(output_files)) {
     close(output_files[[chr]])
-    cat(paste("Chromosome", chr, "data has been written to", output_file, "\n"))
+    cat(paste("Chromosome", chr, "data has been written to", output_filelist[[i]], "\n"))
+    i <- i + 1
   }
+  
   # Close the input file connection
   close(con)
   
@@ -1336,12 +1340,6 @@ generate_megaframe <- function(methyl_bed_list=All_methyl_beds, Sample_count, Me
     cat('QC: Strand and CX should not have NAs, re-run the megaframe function \n')
   }
   
-  write.table(Megaframe, paste(File_prefix, "MegaFrame.csv",sep="_"), row.names=F, sep=",")
-  
-  message("Megaframe is now available in current directory and in the R-env!")
-  
-  
-  
   #QC : Filter rows/sample with missing data
   Megaframe$NAs <- rowSums(is.na(Megaframe))
   #make a histogram
@@ -1498,13 +1496,6 @@ generate_zoomframe <- function(gene_cord_df, MFrame, Gene_col, target_info=TRUE,
 #' @inheritParams generate_zoomframe
 #' @return Megaframe(df) or Zoomframe(df) - Clean data frame containing combined methyl bed information for every individual in the experiment.
 #' @import tidyverse
-#' @examples
-#' # Basic usage for methyl_call_type
-#' # 1. With gene coordinate file
-#' # generate_methylframe(methyl_bed_list= <list_of_BedMethyl files>, gene_info = TRUE, gene_cordinate_file = <File with gene info>, 
-#' #                       Gene_col=<Gene Name/Gene ID>, target_info=TRUE, gene_list = <list of target genes>)
-#' # 2. Without gene cooridnate file
-#' # generate_methylframe(methyl_bed_list= <list_of_BedMethyl files>, gene_info = FALSE )
 #' @export
 
 generate_methylframe <-function(methyl_bed_list=All_methyl_beds, Sample_count = 0,
@@ -1533,6 +1524,10 @@ generate_methylframe <-function(methyl_bed_list=All_methyl_beds, Sample_count = 
   message('\nNOTE: Filtering NAs default is set to 0, See documentation for ideas on how to use the filter \n')
   
   Megaframe <- Megaframe[Megaframe$NAs<=(filter_NAs*3),]
+
+  write.table(Megaframe, paste(File_prefix, "MegaFrame.csv",sep="_"), row.names=F, sep=",")
+  
+  message("Megaframe is now available in current directory and in the R-env!")
   
   if (gene_info==TRUE) {
     

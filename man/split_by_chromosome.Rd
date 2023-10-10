@@ -15,5 +15,6 @@ output_filelist(list) - A list with the bedfile names of the output files.
 }
 \description{
 A function to split a bed file into multiple file by chromosome.
+Note: scaffolds are ignored in the function
 It will create a new directory per each chromosome.
 }
