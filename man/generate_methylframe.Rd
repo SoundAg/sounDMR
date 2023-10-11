@@ -50,11 +50,3 @@ NOTE:
 \item If this function is run using 'gene_info= TRUE' then it needs additional parameters like gene_cordinate_file,  Gene_column,target_info, gene_list etc to precoeed. If no such file is present, enter gene_info as false and
 }
 }
-\examples{
-# Basic usage for methyl_call_type
-# 1. With gene coordinate file
-# generate_methylframe(methyl_bed_list= <list_of_BedMethyl files>, gene_info = TRUE, gene_cordinate_file = <File with gene info>, 
-#                       Gene_col=<Gene Name/Gene ID>, target_info=TRUE, gene_list = <list of target genes>)
-# 2. Without gene cooridnate file
-# generate_methylframe(methyl_bed_list= <list_of_BedMethyl files>, gene_info = FALSE )
-}
