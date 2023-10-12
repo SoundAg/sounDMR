@@ -1172,6 +1172,7 @@ split_by_chromosome <- function(input_file) {
 #'
 #' @param input_file (str) - A string with the name of the input file.
 #' @param chunk_size (int) - Maximum region/position in the bedfile per chunk.
+#' @export
 
 split_by_chunk <- function(input_file, chunk_size, output_dir = "./chunks/") {
   # Get base name
