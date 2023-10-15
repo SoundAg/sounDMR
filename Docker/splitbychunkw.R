@@ -3,5 +3,6 @@ args <- commandArgs(trailingOnly = TRUE)
 
 
 library(sounDMR)
-result <- sounDMR::split_by_chunk(args[1],args[2],args[3])
+chuncksize <- as.integer(args[3])
+result <- sounDMR::split_by_chunk(args[1], args[2], chuncksize)
 print(result)
