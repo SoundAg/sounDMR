@@ -1168,15 +1168,16 @@ split_by_chromosome <- function(input_file) {
 
 #' split_by_chunk
 #' @description
-#' A function to split a bed file into multiple chunks.
+#' A function to split a bed file into multiple chunks. Each chunk is stored in a separated directory.
 #'
 #' @param input_file (str) - A string with the name of the input file.
 #' @param chunk_size (int) - Maximum region/position in the bedfile per chunk.
+#' @param output_dir (str) - A string with the name of the directory with the chunks
 #' @export
 
 split_by_chunk <- function(input_file, chunk_size, output_dir = "./chunks/") {
   # Get base name
-  base_name <- tools::file_path_sans_ext(basename(input_file))
+  base_name <- basename(input_file)
   # Create the output directory if it doesn't exist
   dir.create(output_dir, showWarnings = FALSE, recursive = TRUE)
   # Read the BED file into a data frame
@@ -1189,7 +1190,8 @@ split_by_chunk <- function(input_file, chunk_size, output_dir = "./chunks/") {
   upper_val <- chunk_size
   for (chunk_n in 1:total_chunks) {
     chunk <- subset(bed_df, start > lower_val & start <= upper_val)
-    output_file <- file.path(output_dir, paste0(base_name, "_chunk_", chunk_n, ".bed"))
+    dir.create(file.path(output_dir, paste0("chunk_", chunk_n)), showWarnings = FALSE, recursive = TRUE)
+    output_file <- file.path(output_dir, paste0("chunk_", chunk_n), base_name)
     write.table(chunk, file = output_file, sep = "\t", quote = FALSE, col.names = FALSE, row.names = FALSE)    
     lower_val <- lower_val + chunk_size
     upper_val <- upper_val + chunk_size
