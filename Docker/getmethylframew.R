@@ -37,9 +37,6 @@ if(na_filter==0){
   na_filter = length(methyl_beds)/2
 }
 
-print(c(length(methyl_beds),na_filter, max_read_depth, sample_count))
-
-
 df <- sounDMR::generate_methylframe(methyl_bed_list=methyl_beds, Sample_count = sample_count, 
 Methyl_call_type=methyl_call_type, max_read_depth=max_read_depth, filter_NAs=na_filter, File_prefix=file_prefix)
 
