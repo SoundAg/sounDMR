@@ -1,3 +1,6 @@
+# sounDMR 2.2.2
+	- Updated generate_methylframe() documentation
+
 # sounDMR 2.2.1
 	- Updated split_by_chromosome() to ignore scaffolds in the bed file
 	- Bugfix for megaframe - was only saving unfiltered megaframe. Will now write out Megaframe after the NAs filter.

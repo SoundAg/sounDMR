@@ -1489,7 +1489,7 @@ generate_zoomframe <- function(gene_cord_df, MFrame, Gene_col, target_info=TRUE,
 #' @param methyl_bed_list (list) - ONT methyl bed filenames for each individual contained within the directory. This will just be a list of bedfile names. The input will be the "methyl_bed_list" vector that you create in the previous step.
 #' @param Sample_count (int) - This is required to assign proper alphabet codes. If you need to include the samples from a previous round, then enter the total number of samples from the previous round here. Default is 0. By default alphabetizing starts with 'A'.
 #' @param Methyl_call_type (str) - A string that includes information about the type of run. Currently this package works on Megalodon , DSP (DeepSignal Plant) and Bonito.
-#' @param filter_NAs (int) - Select this parameter based on the histogram plot. This will filter out NAs based on per sample, by default this is 0.
+#' @param filter_NAs (int) - Select this parameter based on the histogram plot. This will filter out NAs based on per sample, by default this is (Total samples)/2.
 #' @param gene_info (str) - This takes in a boolean variable. If the gene info- coordinates, gene name etc are present then make sure to have the gene-cordinates.csv file in the right format (as shown in the sample data on github).
 #' @param gene_cordinate_file (str) - File containing gene-coordinate info. It is important to be in a specific format and should have but not limited to the following columns : Chromosome | Gene_Name | Low | High | Adapt_Low | Adapt_High
 #' Low and High : These are Start and Stop cordinates of the gene. Low is always the lower coordinate which could be start for the positive stranded gene and stop for the negative stranded gene and vice versa.
@@ -1524,7 +1524,7 @@ generate_methylframe <-function(methyl_bed_list=All_methyl_beds, Sample_count = 
   Megaframe <- generate_megaframe(methyl_bed_list=methyl_bed_list, Sample_count = Sample_count,
                                   Methyl_call_type=Methyl_call_type, max_read_depth=max_read_depth, File_prefix=File_prefix)
   
-  message('\nNOTE: Filtering NAs default is set to 0, See documentation for ideas on how to use the filter \n')
+  message('\nNOTE: Filtering NAs default is set to ',filter_NAs ,' (Total_samples/2). See documentation for ideas on how to use the filter \n')
   
   Megaframe <- Megaframe[Megaframe$NAs<=(filter_NAs*3),]
 
