@@ -10,7 +10,9 @@ split_by_chunk(input_file, chunk_size, output_dir = "./chunks/")
 \item{input_file}{(str) - A string with the name of the input file.}
 
 \item{chunk_size}{(int) - Maximum region/position in the bedfile per chunk.}
+
+\item{output_dir}{(str) - A string with the name of the directory with the chunks}
 }
 \description{
-A function to split a bed file into multiple chunks.
+A function to split a bed file into multiple chunks. Each chunk is stored in a separated directory.
 }

@@ -25,7 +25,7 @@ generate_methylframe(
 
 \item{Methyl_call_type}{(str) - A string that includes information about the type of run. Currently this package works on Megalodon , DSP (DeepSignal Plant) and Bonito.}
 
-\item{filter_NAs}{(int) - Select this parameter based on the histogram plot. This will filter out NAs based on per sample, by default this is 0.}
+\item{filter_NAs}{(int) - Select this parameter based on the histogram plot. This will filter out NAs based on per sample, by default this is (Total samples)/2.}
 
 \item{gene_info}{(str) - This takes in a boolean variable. If the gene info- coordinates, gene name etc are present then make sure to have the gene-cordinates.csv file in the right format (as shown in the sample data on github).}
 
