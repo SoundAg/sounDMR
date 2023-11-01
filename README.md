@@ -29,7 +29,7 @@ install_github("SoundAg/sounDMR")
 ```
 
 ## Usage
-`library(soundDMR)` will load the core packages:
+`library(sounDMR)` will load the core packages:
 
 - [tidyverse](https://tidyverse.org)
 - [reshape2](https://www.rdocumentation.org/packages/reshape2/versions/1.4.4)
