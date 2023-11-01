@@ -14,3 +14,5 @@ RUN R -e 'devtools::install_github("jokergoo/GetoptLong")'
 RUN R -e 'devtools::install_github("SoundAg/sounDMR")'
 COPY splitbychrw.R /opt/
 COPY splitbychunkw.R /opt/
+COPY getmethylframemultiplew.R /opt/
+COPY getmethylframew.R /opt/
