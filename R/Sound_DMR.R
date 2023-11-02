@@ -1176,12 +1176,14 @@ split_by_chromosome <- function(input_file) {
 #' @export
 
 split_by_chunk <- function(input_file, chunk_size, output_dir = "./chunks/") {
+  options(scipen = 999)
   # Get base name
   base_name <- basename(input_file)
   # Create the output directory if it doesn't exist
   dir.create(output_dir, showWarnings = FALSE, recursive = TRUE)
   # Read the BED file into a data frame
-  bed_df <- read.table(input_file, header = FALSE, col.names = c("chromosome", "start", "end", "4", "5", "6", "7", "8", "9", "10", "11", "12"))
+  column_names <- c("chromosome", "start", "end", "4", "5", "6", "7", "8", "9", "10", "11", "12")
+  bed_df <- read.table(input_file, header = FALSE, col.names = column_names)
   nucls <- tail(bed_df$start, n = 1)
   # Get number of chunks
   total_chunks <- ceiling(nucls/chunk_size)
@@ -1190,8 +1192,13 @@ split_by_chunk <- function(input_file, chunk_size, output_dir = "./chunks/") {
   upper_val <- chunk_size
   for (chunk_n in 1:total_chunks) {
     chunk <- subset(bed_df, start > lower_val & start <= upper_val)
-    dir.create(file.path(output_dir, paste0("chunk_", chunk_n)), showWarnings = FALSE, recursive = TRUE)
-    output_file <- file.path(output_dir, paste0("chunk_", chunk_n), base_name)
+    # check if it is blank, if so make a all NA line
+    if (dim(chunk)[1] == 0) {
+      chunk <- data.frame(matrix(NA, nrow = 1, ncol = length(column_names)))
+    }
+    chunkndir <- paste0("chunk", chunk_n, "_", as.integer(lower_val), "_", as.integer(upper_val))
+    dir.create(file.path(output_dir, chunkndir), showWarnings = FALSE, recursive = TRUE)
+    output_file <- file.path(output_dir, chunkndir, base_name)
     write.table(chunk, file = output_file, sep = "\t", quote = FALSE, col.names = FALSE, row.names = FALSE)    
     lower_val <- lower_val + chunk_size
     upper_val <- upper_val + chunk_size
