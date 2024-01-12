@@ -132,9 +132,9 @@ target_genes <- unique(dmr_obj$ZoomFrame_filtered$Gene)
 # Note: changepoint analysis requires methyl_summary to be sorted by Chromosome
 # and position
 methyl_summary <- changepoint_analysis(methyl_summary, 
-                                       CG_penalty = 1, 
-                                       CHG_penalty = 1, 
-                                       CHH_penalty = 1, 
+                                       CG_penalty = 5, 
+                                       CHG_penalty = 7, 
+                                       CHH_penalty = 6, 
                                        target_genes = c(),
                                        save_plots = TRUE,
                                        z_col = "Z_GroupT_small", 
