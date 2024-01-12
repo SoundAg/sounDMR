@@ -1227,7 +1227,7 @@ sound_score <- function(changepoint_OF = dataframe, Statistic="Z_GroupT_small",
 
 split_by_chromosome <- function(input_file) {
 
-  output_filelist <- list()
+  output_filelist <- c()
   # get dir only
   fields <- strsplit(input_file, "/")[[1]]
   input_dir <- paste(fields[1:(length(fields) - 1)], collapse = "/")
@@ -1236,7 +1236,7 @@ split_by_chromosome <- function(input_file) {
   # Open the input file for reading
   con <- file(input_file, "r")
   # Create a list to store the file connections for each chromosome output file
-  output_files <- list()
+  output_files <- c()
   # Read the input file line by line and process each line
   while (TRUE) {
     line <- readLines(con, n = 1)
