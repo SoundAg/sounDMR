@@ -14,6 +14,8 @@ bedtools intersect -a [ONT_methyl.bed] -b [target_regions.bed] -wa > [ONT_methyl
 ```
 More information on bedtools intersect can be found [here](https://bedtools.readthedocs.io/en/latest/content/tools/intersect.html).
 
+In addition, these files must constain the cytosine contexts in the last column. This can be achieved using [modbam2bed](https://github.com/epi2me-labs/modbam2bed) for older hardware to split the bed file based on cytosine context. A simple `awk` command can then be used to add the cytosine context into an additional column before recombining into a single file. Alternatively this can be achieved with [modkit](https://github.com/nanoporetech/modkit) with the following line to convert into the proper format:
+`cat ${unconverted_bed} | awk -v OFS='\t' '{print $1, $2, $3, $4, $5, $6, $7, $8 ,$9, $10, $11, $4 }' |  sed 's/m,//g' |  sed 's/,0//g' > ${output_bed}`
 
 ## Installation
 Make sure you have access to the latest version of the package and go through the installation steps
