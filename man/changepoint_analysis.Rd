@@ -11,7 +11,8 @@ changepoint_analysis(
   CHH_penalty = int,
   target_genes = c(),
   save_plots = FALSE,
-  z_col = "column"
+  z_col = "column",
+  whole_genome = FALSE
 )
 }
 \arguments{
@@ -29,6 +30,10 @@ is FALSE}
 \item{z_col}{(str) - the column to run the changepoint analysis on. This
 can be any column, but for DMR analysis we recommend using the z scores for
 a fixed effect variable.}
+
+\item{whole_genome}{(boolean) - whether to run changepoints on a whole genome
+scale. Setting to TRUE will find changepoints per chromosome. Setting to FALSE
+will find changepoints per gene.}
 }
 \value{
 everything (df) - data frame containing the mean changepoint value for the
