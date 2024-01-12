@@ -73,14 +73,13 @@ Methylframe <- generate_methylframe(methyl_bed_list=methyl_bed,
 # any information with respect to treatments, rounds etc. 
 # Make sure to add it for DMR analysis
 
-
-
 #----------------------------Part 2 : DMR analysis------------------------------
 
 #------------
 # Clean Data
 #------------
-
+# Note: Update the created "Sample_Experimental_design_starter.csv" file to
+# include the other information
 dmr_obj <- create_dmr_obj(Methylframe, experimental_design_df)
 
 #-----------------------------------------------
@@ -95,11 +94,10 @@ methyl_summary <- create_methyl_summary(dmr_obj,
                                           ))
 
 # Option to subset methyl_summary
+# Note: code is currently set up to include all individuals, change as needed
 individuals_of_interest = unique(dmr_obj$experimental_design_df$Individual)
 methyl_summary <- subset_methyl_summary(methyl_summary, 
-                                        individuals_to_keep = individuals_of_interest)
-foo <- subset_methyl_summary(dmr_obj$zoom_frame_filtered,
-                             individuals_to_keep = c("S1", "S2", "S3"))
+                                        individuals_to_keep=individuals_of_interest)
 
 #--------------------
 # Group DMR Analysis
@@ -130,20 +128,23 @@ changepoint_cols = find_changepoint_col_options(methyl_summary)
 target_genes <- unique(dmr_obj$ZoomFrame_filtered$Gene)
 
 # Run the changepoint_analysis function
-methyl_summary_cg <- changepoint_analysis(whole_df, 
-                                          CG_penalty = 5, 
-                                          CHG_penalty = 7, 
-                                          CHH_penalty = 6, 
-                                          target_genes = c(),
-                                          save_plots = FALSE,
-                                          z_col = "Treat_V_Control", 
-                                          whole_genome = TRUE)
+# Note: when whole_genome = FALSE, the target_genes need to be a non-empty list
+# Note: changepoint analysis requires methyl_summary to be sorted by Chromosome
+# and position
+methyl_summary <- changepoint_analysis(methyl_summary, 
+                                       CG_penalty = 1, 
+                                       CHG_penalty = 1, 
+                                       CHH_penalty = 1, 
+                                       target_genes = c(),
+                                       save_plots = TRUE,
+                                       z_col = "Z_GroupT_small", 
+                                       whole_genome = TRUE)
 
 #----------------------
 # DMR score rendering
 #----------------------
 
-DMR_score <- sound_score(changepoint_OF = methyl_summary_cg, 
+DMR_score <- sound_score(changepoint_OF = methyl_summary, 
                          Statistic = changepoint_cols[1], 
                          Per_Change = "Treat_V_Control", CF = T,
                          other_columns=c("Control", "Estimate_GroupT_small"),
@@ -151,4 +152,5 @@ DMR_score <- sound_score(changepoint_OF = methyl_summary_cg,
 
 # Only run bootscore if gene info is available
 DMR_boot_score <- boot_score(sound_score_obj = DMR_score, 
-                             target_gene = "AT1G01640", scoring_col_name="dmr_score2")
+                             target_gene = "AT1G01640", 
+                             scoring_col_name="dmr_score2")
