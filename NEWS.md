@@ -1,3 +1,8 @@
+# sounDMR 2.3.0
+	- Removed split_by_chromosome function from workflow due to bugs 
+	- Improved notes for running whole genome analysis
+	- Improved memorry issues with group_DMR()
+
 # sounDMR 2.2.2
 	- Updated generate_methylframe() documentation
 

@@ -1,0 +1,6 @@
+ID,Bedfile,Plant,Group
+S1,Treated_3_BedMethyl.bed,P3,T
+S2,Control_2_BedMethyl.bed,P5,C
+S3,Control_1_BedMethyl.bed,P4,C
+S4,Treated_1_BedMethyl.bed,P1,T
+S5,Treated_2_BedMethyl.bed,P2,T
