@@ -1,3 +1,8 @@
+# sounDMR 2.3.1
+        - In create_dmr_obj():
+              - Changed calculation of Percent column in LongPercent to weighted mean
+              - Fixed bug in LongMeth total_RD calculation to use sum of read depths instead of mean
+
 # sounDMR 2.3.0
 	- Removed split_by_chromosome function from workflow due to bugs 
 	- Improved notes for running whole genome analysis
