@@ -812,6 +812,7 @@ add_changepoint_info <- function(whole_df, changepoint, col_name) {
   MethRegionName <- paste0('MethRegion_', col_name)
   MethRegionLengthName <- paste0('MethRegionLength_', col_name)
   MethGroupName <- paste0('MethGroup_', col_name)
+  MethCytosinesName <- paste0('MethCytosines_', col_name)
   
   if (typeof(changepoint) != 'NULL') {
     changepoint <<- changepoint
@@ -819,17 +820,23 @@ add_changepoint_info <- function(whole_df, changepoint, col_name) {
     
     #Add in the first and last cytosine if needed for the changepoint start and stop sites
     if ((1 %in% changepoints) & (nrow(whole_df) %in% changepoints)) {
-      start <- changepoints
-      stop <- c(changepoints[-1] - 1, nrow(whole_df))
+      start <- c(1, changepoints[-length(changepoints)]+1)
+      stop <- c(changepoints[-length(changepoints)], nrow(whole_df))
+      #start <- changepoints+1
+      #stop <- c(changepoints[-1] - 1, nrow(whole_df))
     } else if ((1 %in% changepoints) & (!nrow(whole_df) %in% changepoints)) {
-      start <- changepoints
-      stop <- c(changepoints[-1] - 1, nrow(whole_df))
+      start <- c(1, changepoints[-length(changepoints)]+1)
+      stop <- c(changepoints[-length(changepoints)], nrow(whole_df))
+      #start <- changepoints
+      #stop <- c(changepoints[-1] - 1, nrow(whole_df))
     } else if ((!1 %in% changepoints) & (nrow(whole_df) %in% changepoints)) {
-      start <- c(1, changepoints[-length(changepoints)])
-      stop <- c(changepoints[-length(changepoints)] - 1, nrow(whole_df))
+      start <- c(1, changepoints[-length(changepoints)]+1)
+      stop <- c(changepoints[-length(changepoints)], nrow(whole_df))
     } else {
-      start <- changepoints
-      stop <- changepoints - 1
+      start <- c(1, changepoints[-length(changepoints)]+1)
+      stop <- c(changepoints[-length(changepoints)], nrow(whole_df))
+      #start <- changepoints
+      #stop <- changepoints - 1
     }
     
     BP_CG <- data.frame(cbind(start,stop))
@@ -844,11 +851,13 @@ add_changepoint_info <- function(whole_df, changepoint, col_name) {
     # Find the MethRegion, MethGroupName, and MethRegionLength
     whole_df[MethRegionName] = 0
     whole_df[MethRegionLengthName] = 0
+    whole_df[MethCytosinesName] = 0
     for(i in 1:nrow(BP_CG)){
       whole_df[c(BP_CG[i, 'start']:BP_CG[i, 'stop']),MethRegionName] <- BP_CG[i, 'DifMean']
       whole_df[c(BP_CG[i, 'start']:BP_CG[i, 'stop']),MethRegionLengthName] <- abs(as.numeric(BP_CG[i, 'BPStop']) -
                                                                                     as.numeric(BP_CG[i, 'BPStart']))
       whole_df[c(BP_CG[i, 'start']:BP_CG[i, 'stop']),MethGroupName] <- i
+      whole_df[c(BP_CG[i, 'start']:BP_CG[i, 'stop']),MethCytosinesName]<-BP_CG$stop[i]-BP_CG$start[i]+1
     }
     
   } else {
@@ -857,11 +866,13 @@ add_changepoint_info <- function(whole_df, changepoint, col_name) {
       whole_df[MethRegionName] = whole_df[[col_name]]
       whole_df[MethRegionLengthName] = 1
       whole_df[MethGroupName] = 1
+      whole_df[MethCytosinesName] = 1
     } else {
       whole_df[nrow(whole_df) + 1,] <- NA
       whole_df[1, MethRegionName] = whole_df[[col_name]]
       whole_df[1, MethRegionLengthName] = 0
       whole_df[1, MethGroupName] = 1
+      whole_df[MethCytosinesName] = 1
     }
   }
   
