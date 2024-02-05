@@ -1,3 +1,7 @@
+# sounDMR 2.3.2
+	- Added new feature to calculate number of cytosines included in a changepoint region
+	- Fixed a bug in creating line plots for changepoints
+
 # sounDMR 2.3.1
         - In create_dmr_obj():
               - Changed calculation of Percent column in LongPercent to weighted mean
