@@ -1,5 +1,6 @@
-"ID","Bedfile"
-"S1","WaterControl_2_methyl.bed"
-"S2","WaterControl_8_methyl.bed"
-"S3","Zeb_100Treated_2_methyl.bed"
-"S4","Zeb_100Treated_8_methyl.bed"
+ID,Bedfile
+S1,Treated_3_BedMethyl.bed
+S2,Control_2_BedMethyl.bed
+S3,Control_1_BedMethyl.bed
+S4,Treated_1_BedMethyl.bed
+S5,Treated_2_BedMethyl.bed

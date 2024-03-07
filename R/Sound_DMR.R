@@ -171,13 +171,17 @@ create_dmr_obj <- function(ZoomFrame = dataframe,
   
   # Aggregate
   print('Step 7: aggregating by plant')
+
+  LongPercent$total_RD<-LongMeth$total_RD
+  
   LongPercent <- LongPercent %>%
     group_by(Gene, Zeroth_pos, Plant, Position, CX, Strand, Group, Chromosome) %>%
-    summarize(Percent = mean(Percent, na.rm = T))
+    summarize(Percent = weighted.mean(Percent, total_RD, na.rm = T))
   
   LongMeth <- LongMeth %>%
     group_by(Gene, Zeroth_pos, Plant, Position, CX, Strand, Group, Chromosome) %>%
-    summarize(total_RD = mean(total_RD, na.rm = T))
+    summarize(total_RD = sum(total_RD, na.rm = T))
+  
   LongMeth <- LongMeth[,c('Chromosome', 'Gene', 'Position', 'Strand', 'CX',
                           'Zeroth_pos', 'Plant', 'total_RD', 'Group')]
   
@@ -808,6 +812,7 @@ add_changepoint_info <- function(whole_df, changepoint, col_name) {
   MethRegionName <- paste0('MethRegion_', col_name)
   MethRegionLengthName <- paste0('MethRegionLength_', col_name)
   MethGroupName <- paste0('MethGroup_', col_name)
+  MethCytosinesName <- paste0('MethCytosines_', col_name)
   
   if (typeof(changepoint) != 'NULL') {
     changepoint <<- changepoint
@@ -815,17 +820,23 @@ add_changepoint_info <- function(whole_df, changepoint, col_name) {
     
     #Add in the first and last cytosine if needed for the changepoint start and stop sites
     if ((1 %in% changepoints) & (nrow(whole_df) %in% changepoints)) {
-      start <- changepoints
-      stop <- c(changepoints[-1] - 1, nrow(whole_df))
+      start <- c(1, changepoints[-length(changepoints)]+1)
+      stop <- c(changepoints[-length(changepoints)], nrow(whole_df))
+      #start <- changepoints+1
+      #stop <- c(changepoints[-1] - 1, nrow(whole_df))
     } else if ((1 %in% changepoints) & (!nrow(whole_df) %in% changepoints)) {
-      start <- changepoints
-      stop <- c(changepoints[-1] - 1, nrow(whole_df))
+      start <- c(1, changepoints[-length(changepoints)]+1)
+      stop <- c(changepoints[-length(changepoints)], nrow(whole_df))
+      #start <- changepoints
+      #stop <- c(changepoints[-1] - 1, nrow(whole_df))
     } else if ((!1 %in% changepoints) & (nrow(whole_df) %in% changepoints)) {
-      start <- c(1, changepoints[-length(changepoints)])
-      stop <- c(changepoints[-length(changepoints)] - 1, nrow(whole_df))
+      start <- c(1, changepoints[-length(changepoints)]+1)
+      stop <- c(changepoints[-length(changepoints)], nrow(whole_df))
     } else {
-      start <- changepoints
-      stop <- changepoints - 1
+      start <- c(1, changepoints[-length(changepoints)]+1)
+      stop <- c(changepoints[-length(changepoints)], nrow(whole_df))
+      #start <- changepoints
+      #stop <- changepoints - 1
     }
     
     BP_CG <- data.frame(cbind(start,stop))
@@ -840,11 +851,13 @@ add_changepoint_info <- function(whole_df, changepoint, col_name) {
     # Find the MethRegion, MethGroupName, and MethRegionLength
     whole_df[MethRegionName] = 0
     whole_df[MethRegionLengthName] = 0
+    whole_df[MethCytosinesName] = 0
     for(i in 1:nrow(BP_CG)){
       whole_df[c(BP_CG[i, 'start']:BP_CG[i, 'stop']),MethRegionName] <- BP_CG[i, 'DifMean']
       whole_df[c(BP_CG[i, 'start']:BP_CG[i, 'stop']),MethRegionLengthName] <- abs(as.numeric(BP_CG[i, 'BPStop']) -
                                                                                     as.numeric(BP_CG[i, 'BPStart']))
       whole_df[c(BP_CG[i, 'start']:BP_CG[i, 'stop']),MethGroupName] <- i
+      whole_df[c(BP_CG[i, 'start']:BP_CG[i, 'stop']),MethCytosinesName]<-BP_CG$stop[i]-BP_CG$start[i]+1
     }
     
   } else {
@@ -853,11 +866,13 @@ add_changepoint_info <- function(whole_df, changepoint, col_name) {
       whole_df[MethRegionName] = whole_df[[col_name]]
       whole_df[MethRegionLengthName] = 1
       whole_df[MethGroupName] = 1
+      whole_df[MethCytosinesName] = 1
     } else {
       whole_df[nrow(whole_df) + 1,] <- NA
       whole_df[1, MethRegionName] = whole_df[[col_name]]
       whole_df[1, MethRegionLengthName] = 0
       whole_df[1, MethGroupName] = 1
+      whole_df[MethCytosinesName] = 1
     }
   }
   
@@ -1227,7 +1242,7 @@ sound_score <- function(changepoint_OF = dataframe, Statistic="Z_GroupT_small",
 
 split_by_chromosome <- function(input_file) {
 
-  output_filelist <- list()
+  output_filelist <- c()
   # get dir only
   fields <- strsplit(input_file, "/")[[1]]
   input_dir <- paste(fields[1:(length(fields) - 1)], collapse = "/")
@@ -1236,7 +1251,7 @@ split_by_chromosome <- function(input_file) {
   # Open the input file for reading
   con <- file(input_file, "r")
   # Create a list to store the file connections for each chromosome output file
-  output_files <- list()
+  output_files <- c()
   # Read the input file line by line and process each line
   while (TRUE) {
     line <- readLines(con, n = 1)
