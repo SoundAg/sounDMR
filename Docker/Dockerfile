@@ -16,3 +16,11 @@ COPY splitbychrw.R /opt/
 COPY splitbychunkw.R /opt/
 COPY getmethylframemultiplew.R /opt/
 COPY getmethylframew.R /opt/
+COPY step4_sounDMRw.R /opt/
+
+# Install pandas
+RUN apt-get update && apt-get install -y --no-install-recommends build-essential python3.6 python3-pip python3-setuptools python3-dev
+RUN pip3 install pandas
+COPY sbchunk.py /opt/
+COPY splitbychromosome.py /opt/
+
