@@ -3,7 +3,7 @@ For more information on the package, as well as examples of the types of downstr
 
 The following document contains a walkthrough of how to get ONT data into the appropriate format to run through sounDMR and a simple tutorial of the functions used to run a differential methylation analysis using sounDMR.
 
-Note: The whole genome bedmethyl analysis is still in its beta stage. We are currently building a robust code to handle large data and will be releasing the full version soon.  
+Note: Do not use the contents of the Docker. This is for Whole genome methylation analysis and is still in its beta stage. We are currently building a robust code to handle large data and will be releasing the full version soon.  
 
 
 ## Pre-requisites
