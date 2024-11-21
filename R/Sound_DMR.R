@@ -171,12 +171,11 @@ create_dmr_obj <- function(ZoomFrame = dataframe,
   
   # Aggregate
   print('Step 7: aggregating by plant')
-
+  
   LongPercent$total_RD<-LongMeth$total_RD
   
   LongPercent <- LongPercent %>%
-    group_by(Gene, Zeroth_pos, Plant, Position, CX, Strand, Group, Chromosome) %>%
-    summarize(Percent = weighted.mean(Percent, total_RD, na.rm = T))
+    mutate(Percent = weighted.mean(Percent, total_RD, na.rm = T), .by=c(Plant,Group, Chromosome, Position, Zeroth_pos))
   
   LongMeth <- LongMeth %>%
     group_by(Gene, Zeroth_pos, Plant, Position, CX, Strand, Group, Chromosome) %>%
@@ -196,7 +195,6 @@ create_dmr_obj <- function(ZoomFrame = dataframe,
   
   return(out)
 }
-
 
 #' Subset Data Frames to Contain Only Columns of Interest
 #'
